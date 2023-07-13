@@ -80,7 +80,8 @@ class OctoPrintPermission(Permission):
         Overridden from Permission.allows to make sure the Identity provides ALL
         required needs instead of ANY required need.
 
-        :param identity: The identity
+        Arguments:
+          identity (octoprint.vendor.flask_principal.Identity): The identity to check
         """
         if self.needs and len(self.needs.intersection(identity.provides)) != len(
             self.needs
@@ -96,7 +97,8 @@ class OctoPrintPermission(Permission):
         """Create a new OctoPrintPermission with the requirements of the union of this
         and other.
 
-        :param other: The other permission
+        Arguments:
+          other (OctoPrintPermission): The other permission
         """
         p = self.__class__(self._name, self._description, *self.needs.union(other.needs))
         p.excludes.update(self.excludes.union(other.excludes))
@@ -144,7 +146,7 @@ class PluginOctoPrintPermission(OctoPrintPermission):
 class PluginIdentityContext:
     """Identity context for not initialized Permissions
 
-    Needed to support @Permissions.PLUGIN_X_Y.require()
+    Needed to support `@Permissions.PLUGIN_X_Y.require()`
 
     Will search the permission when needed
     """
@@ -195,7 +197,7 @@ class PluginIdentityContext:
 class PluginPermissionDecorator(Permission):
     """Decorator Class for not initialized Permissions
 
-    Needed to support @Permissions.PLUGIN_X_Y.require()
+    Needed to support `@Permissions.PLUGIN_X_Y.require()`
     """
 
     def __init__(self, key):

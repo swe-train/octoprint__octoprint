@@ -32,12 +32,13 @@ class StorageInterface:
     @property
     def analysis_backlog(self):
         """
-        Get an iterator over all items stored in the storage that need to be analysed by the :class:`~octoprint.filemanager.AnalysisQueue`.
+        Get an iterator over all items stored in the storage that need to be analysed by the [AnalysisQueue][octoprint.filemanager.AnalysisQueue].
 
         The yielded elements are expected as storage specific absolute paths to the respective files. Don't forget
         to recurse into folders if your storage adapter supports those.
 
-        :return: an iterator yielding all un-analysed files in the storage
+        Returns:
+            (iterator): an iterator yielding all un-analysed files in the storage
         """
         # empty generator pattern, yield is intentionally unreachable
         return
@@ -51,40 +52,53 @@ class StorageInterface:
 
     def last_modified(self, path=None, recursive=False):
         """
-        Get the last modification date of the specified ``path`` or ``path``'s subtree.
+        Get the last modification date of the specified `path` or `path`'s subtree.
 
         Args:
-            path (str or None): Path for which to determine the subtree's last modification date. If left out or
-                set to None, defatuls to storage root.
-            recursive (bool): Whether to determine only the date of the specified ``path`` (False, default) or
-                the whole ``path``'s subtree (True).
+            path (str | None): Path for which to determine the subtree's last modification date. If left out or
+                set to None, defaults to storage root.
+            recursive (bool): Whether to determine only the date of the specified `path` (`False`, default) or
+                the whole `path`'s subtree (True).
 
-        Returns: (float) The last modification date of the indicated subtree
+        Returns:
+            (float): The last modification date of the indicated subtree
         """
         raise NotImplementedError()
 
     def file_in_path(self, path, filepath):
         """
-        Returns whether the file indicated by ``file`` is inside ``path`` or not.
-        :param string path: the path to check
-        :param string filepath: path to the file
-        :return: ``True`` if the file is inside the path, ``False`` otherwise
+        Returns whether the file indicated by `file` is inside `path` or not.
+
+        Arguments:
+            path (str): the path to check
+            filepath (str): path to the file
+
+        Returns:
+            (bool): `True` if the file is inside the path, `False` otherwise
         """
         return NotImplementedError()
 
     def file_exists(self, path):
         """
-        Returns whether the file indicated by ``path`` exists or not.
-        :param string path: the path to check for existence
-        :return: ``True`` if the file exists, ``False`` otherwise
+        Returns whether the file indicated by `path` exists or not.
+
+        Arguments:
+            path (str): the path to check for existence
+
+        Returns:
+            (bool): `True` if the file exists, `False` otherwise
         """
         raise NotImplementedError()
 
     def folder_exists(self, path):
         """
-        Returns whether the folder indicated by ``path`` exists or not.
-        :param string path: the path to check for existence
-        :return: ``True`` if the folder exists, ``False`` otherwise
+        Returns whether the folder indicated by `path` exists or not.
+
+        Arguments:
+            path (str): the path to check for existence
+
+        Returns:
+            bool: `True` if the folder exists, `False` otherwise
         """
         raise NotImplementedError()
 
@@ -92,112 +106,127 @@ class StorageInterface:
         self, path=None, filter=None, recursive=True, level=0, force_refresh=False
     ):
         """
-        List all files in storage starting at ``path``. If ``recursive`` is set to True (the default), also dives into
+        List all files in storage starting at `path`. If `recursive` is set to `True` (the default), also dives into
         subfolders.
 
         An optional filter function can be supplied which will be called with a file name and file data and which has
         to return True if the file is to be included in the result or False if not.
 
         The data structure of the returned result will be a dictionary mapping from file names to entry data. File nodes
-        will contain their metadata here, folder nodes will contain their contained files and folders. Example::
+        will contain their metadata here, folder nodes will contain their contained files and folders.
 
-           {
-             "some_folder": {
-               "name": "some_folder",
-               "path": "some_folder",
-               "type": "folder",
-               "children": {
-                 "some_sub_folder": {
-                   "name": "some_sub_folder",
-                   "path": "some_folder/some_sub_folder",
-                   "type": "folder",
-                   "typePath": ["folder"],
-                   "children": { ... }
-                 },
-                 "some_file.gcode": {
-                   "name": "some_file.gcode",
-                   "path": "some_folder/some_file.gcode",
-                   "type": "machinecode",
-                   "typePath": ["machinecode", "gcode"],
-                   "hash": "<sha1 hash>",
-                   "links": [ ... ],
-                   ...
-                 },
-                 ...
-               }
-             "test.gcode": {
-               "name": "test.gcode",
-               "path": "test.gcode",
-               "type": "machinecode",
-               "typePath": ["machinecode", "gcode"],
-               "hash": "<sha1 hash>",
-               "links": [...],
-               ...
-             },
-             "test.stl": {
-               "name": "test.stl",
-               "path": "test.stl",
-               "type": "model",
-               "typePath": ["model", "stl"],
-               "hash": "<sha1 hash>",
-               "links": [...],
-               ...
-             },
-             ...
-           }
+        Example:
 
-        :param string path:     base path from which to recursively list all files, optional, if not supplied listing will start
-                                from root of base folder
-        :param function filter: a filter that matches the files that are to be returned, may be left out in which case no
-                                filtering will take place
-        :param bool recursive:  will also step into sub folders for building the complete list if set to True, otherwise will only
-                                do one step down into sub folders to be able to populate the ``children``.
-        :return: a dictionary mapping entry names to entry data that represents the whole file list
+            ``` json
+            {
+                "some_folder": {
+                    "name": "some_folder",
+                    "path": "some_folder",
+                    "type": "folder",
+                    "children": {
+                        "some_sub_folder": {
+                            "name": "some_sub_folder",
+                            "path": "some_folder/some_sub_folder",
+                            "type": "folder",
+                            "typePath": ["folder"],
+                            "children": { ... }
+                        },
+                        "some_file.gcode": {
+                            "name": "some_file.gcode",
+                            "path": "some_folder/some_file.gcode",
+                            "type": "machinecode",
+                            "typePath": ["machinecode", "gcode"],
+                            "hash": "<sha1 hash>",
+                            "links": [ ... ],
+                            ...
+                        },
+                        ...
+                    }
+                "test.gcode": {
+                    "name": "test.gcode",
+                    "path": "test.gcode",
+                    "type": "machinecode",
+                    "typePath": ["machinecode", "gcode"],
+                    "hash": "<sha1 hash>",
+                    "links": [...],
+                    ...
+                },
+                "test.stl": {
+                    "name": "test.stl",
+                    "path": "test.stl",
+                    "type": "model",
+                    "typePath": ["model", "stl"],
+                    "hash": "<sha1 hash>",
+                    "links": [...],
+                    ...
+                },
+                ...
+            }
+            ```
+
+        Arguments:
+            path (str): base path from which to recursively list all files, optional, if not supplied listing will start
+                from root of base folder
+            filter (function): a filter that matches the files that are to be returned, may be left out in which case no
+                filtering will take place
+            recursive (bool): will also step into sub folders for building the complete list if set to `True`, otherwise will only
+                do one step down into sub folders to be able to populate the `children`.
+
+        Returns:
+            (dict): a nested dictionary mapping entry names to entry data that represents the whole file list
         """
         raise NotImplementedError()
 
     def add_folder(self, path, ignore_existing=True, display=None):
         """
-        Adds a folder as ``path``
+        Adds a folder as `path`
 
-        The ``path`` will be sanitized.
+        The `path` will be sanitized.
 
-        :param string path:          the path of the new folder
-        :param bool ignore_existing: if set to True, no error will be raised if the folder to be added already exists
-        :param str display:          display name of the folder
-        :return: the sanitized name of the new folder to be used for future references to the folder
+        Arguments:
+            path (str): the path of the new folder
+            ignore_existing (bool): if set to `True`, no error will be raised if the folder to be added already exists
+            display (str): display name of the folder
+
+        Returns:
+            (str): the sanitized name of the new folder to be used for future references to the folder
         """
         raise NotImplementedError()
 
     def remove_folder(self, path, recursive=True):
         """
-        Removes the folder at ``path``
+        Removes the folder at `path`
 
-        :param string path:    the path of the folder to remove
-        :param bool recursive: if set to True, contained folders and files will also be removed, otherwise an error will
-                               be raised if the folder is not empty (apart from any metadata files) when it's to be removed
+        Arguments:
+            path (str): the path of the folder to remove
+            recursive (bool): if set to `True`, contained folders and files will also be removed, otherwise an error will
+                be raised if the folder is not empty (apart from any metadata files) when it's to be removed
         """
         raise NotImplementedError()
 
     def copy_folder(self, source, destination):
         """
-        Copies the folder ``source`` to ``destination``
+        Copies the folder `source` to `destination`
 
-        :param string source: path to the source folder
-        :param string destination: path to destination
+        Arguments:
+            source (str): path to the source folder
+            destination (str): path to destination
 
-        :return: the path in the storage to the copy of the folder
+        Returns:
+            (str): the new path in the storage to the copy of the folder
         """
         raise NotImplementedError()
 
     def move_folder(self, source, destination):
         """
-        Moves the folder ``source`` to ``destination``
+        Moves the folder `source` to `destination`
 
-        :param string source: path to the source folder
-        :param string destination: path to destination
+        Arguments:
+            source (str): path to the source folder
+            destination (str): path to destination
 
-        :return: the new path in the storage to the folder
+        Returns:
+            (str): the new path in the storage to the folder
         """
         raise NotImplementedError()
 
@@ -211,50 +240,58 @@ class StorageInterface:
         display=None,
     ):
         """
-        Adds the file ``file_object`` as ``path``
+        Adds the file `file_object` as `path`
 
-        :param string path:            the file's new path, will be sanitized
-        :param object file_object:     a file object that provides a ``save`` method which will be called with the destination path
-                                       where the object should then store its contents
-        :param object printer_profile: the printer profile associated with this file (if any)
-        :param list links:             any links to add with the file
-        :param bool allow_overwrite:   if set to True no error will be raised if the file already exists and the existing file
-                                       and its metadata will just be silently overwritten
-        :param str display:            display name of the file
-        :return: the sanitized name of the file to be used for future references to it
+        Arguments:
+            path (str): the path of the new file, will be sanitized
+            file_object (object): a file object that provides a `save` method which will be called with the destination path
+                where the object should then store its contents
+            printer_profile (object): the printer profile associated with this file (if any)
+            links (list): any links to add with the file
+            allow_overwrite (bool): if set to `True` no error will be raised if the file already exists and the existing file
+                and its metadata will just be silently overwritten
+            display (str): display name of the file
+
+        Returns:
+            (str): the sanitized name of the file to be used for future references to it
         """
         raise NotImplementedError()
 
     def remove_file(self, path):
         """
-        Removes the file at ``path``
+        Removes the file at `path`
 
         Will also take care of deleting the corresponding entries
         in the metadata and deleting all links pointing to the file.
 
-        :param string path: path of the file to remove
+        Arguments:
+            path (str): path of the file to remove
         """
         raise NotImplementedError()
 
     def copy_file(self, source, destination):
         """
-        Copies the file ``source`` to ``destination``
+        Copies the file `source` to `destination`
 
-        :param string source: path to the source file
-        :param string destination: path to destination
+        Arguments:
+            source (str): path to the source file
+            destination (str): path to destination
 
-        :return: the path in the storage to the copy of the file
+        Returns:
+            (str): the new path in the storage to the copy of the file
         """
         raise NotImplementedError()
 
     def move_file(self, source, destination):
         """
-        Moves the file ``source`` to ``destination``
+        Moves the file `source` to `destination`
 
-        :param string source: path to the source file
-        :param string destination: path to destination
+        Arguments:
+            source (str): path to the source file
+            destination (str): path to destination
 
-        :return: the new path in the storage to the file
+        Returns:
+            (str): the new path in the storage to the file
         """
         raise NotImplementedError()
 
@@ -262,173 +299,212 @@ class StorageInterface:
         """
         Returns whether the file at path has been analysed yet
 
-        :param path: virtual path to the file for which to retrieve the metadata
+        Arguments:
+            path (str): path to the file to check
         """
         raise NotImplementedError()
 
     def get_metadata(self, path):
         """
-        Retrieves the metadata for the file ``path``.
+        Retrieves the metadata for the file `path`.
 
-        :param path: virtual path to the file for which to retrieve the metadata
-        :return: the metadata associated with the file
+        Arguments:
+            path (str): virtual path to the file for which to retrieve the metadata
+
+        Returns:
+            (dict): the metadata associated with the file
         """
         raise NotImplementedError()
 
     def add_link(self, path, rel, data):
         """
-        Adds a link of relation ``rel`` to file ``path`` with the given ``data``.
+        Adds a link of relation `rel` to file `path` with the given `data`.
 
         The following relation types are currently supported:
 
-          * ``model``: adds a link to a model from which the file was created/sliced, expected additional data is the ``name``
-            and optionally the ``hash`` of the file to link to. If the link can be resolved against another file on the
-            current ``path``, not only will it be added to the links of ``name`` but a reverse link of type ``machinecode``
-            referring to ``name`` and its hash will also be added to the linked ``model`` file
-          * ``machinecode``: adds a link to a file containing machine code created from the current file (model), expected
-            additional data is the ``name`` and optionally the ``hash`` of the file to link to. If the link can be resolved
-            against another file on the current ``path``, not only will it be added to the links of ``name`` but a reverse
-            link of type ``model`` referring to ``name`` and its hash will also be added to the linked ``model`` file.
-          * ``web``: adds a location on the web associated with this file (e.g. a website where to download a model),
-            expected additional data is a ``href`` attribute holding the website's URL and optionally a ``retrieved``
-            attribute describing when the content was retrieved
+        - `model`: adds a link to a model from which the file was created/sliced, expected additional data is the `name`
+          and optionally the `hash` of the file to link to. If the link can be resolved against another file on the
+          current `path`, not only will it be added to the links of `name` but a reverse link of type `machinecode`
+          referring to `name` and its hash will also be added to the linked `model` file
+        - `machinecode`: adds a link to a file containing machine code created from the current file (model), expected
+          additional data is the `name` and optionally the `hash` of the file to link to. If the link can be resolved
+          against another file on the current `path`, not only will it be added to the links of `name` but a reverse
+          link of type `model` referring to `name` and its hash will also be added to the linked `model` file.
+        - `web`: adds a location on the web associated with this file (e.g. a website where to download a model),
+          expected additional data is a `href` attribute holding the website's URL and optionally a `retrieved`
+          attribute describing when the content was retrieved
 
-        Note that adding ``model`` links to files identifying as models or ``machinecode`` links to files identifying
+        Note that adding `model` links to files identifying as models or `machinecode` links to files identifying
         as machine code will be refused.
 
-        :param path: path of the file for which to add a link
-        :param rel: type of relation of the link to add (currently ``model``, ``machinecode`` and ``web`` are supported)
-        :param data: additional data of the link to add
+        Arguments:
+            path (str): path of the file for which to add a link
+            rel (str): type of relation of the link to add (currently `model`, `machinecode` and `web` are supported)
+            data (dict): additional data of the link to add
         """
         raise NotImplementedError()
 
     def remove_link(self, path, rel, data):
         """
-        Removes the link consisting of ``rel`` and ``data`` from file ``name`` on ``path``.
+        Removes the link consisting of `rel` and `data` from file `path`.
 
-        :param path: path of the file from which to remove the link
-        :param rel: type of relation of the link to remove (currently ``model``, ``machinecode`` and ``web`` are supported)
-        :param data: additional data of the link to remove, must match existing link
+        Arguments:
+            path (str): path of the file from which to remove the link
+            rel (str): type of relation of the link to remove (currently `model`, `machinecode` and `web` are supported)
+            data (dict): additional data of the link to remove, must match existing link
         """
         raise NotImplementedError()
 
     def get_additional_metadata(self, path, key):
         """
-        Fetches additional metadata at ``key`` from the metadata of ``path``.
+        Fetches additional metadata at `key` from the metadata of `path`.
 
-        :param path: the virtual path to the file for which to fetch additional metadata
-        :param key: key of metadata to fetch
+        Arguments:
+            path (str): virtual path to the file for which to fetch additional metadata
+            key (str): key of metadata to fetch
         """
         raise NotImplementedError()
 
     def set_additional_metadata(self, path, key, data, overwrite=False, merge=False):
         """
-        Adds additional metadata to the metadata of ``path``. Metadata in ``data`` will be saved under ``key``.
+        Adds additional metadata to the metadata of `path`. Metadata in `data` will be saved under `key`.
 
-        If ``overwrite`` is set and ``key`` already exists in ``name``'s metadata, the current value will be overwritten.
+        If `overwrite` is set and `key` already exists in `path`'s metadata, the current value will be overwritten.
 
-        If ``merge`` is set and ``key`` already exists and both ``data`` and the existing data under ``key`` are dictionaries,
+        If `merge` is set and `key` already exists and both `data` and the existing data under `key` are dictionaries,
         the two dictionaries will be merged recursively.
 
-        :param path: the virtual path to the file for which to add additional metadata
-        :param key: key of metadata to add
-        :param data: metadata to add
-        :param overwrite: if True and ``key`` already exists, it will be overwritten
-        :param merge: if True and ``key`` already exists and both ``data`` and the existing data are dictionaries, they
-                      will be merged
+        Arguments:
+            path (str): virtual path to the file for which to add additional metadata
+            key (str): key of metadata to add
+            data (dict): metadata to add
+            overwrite (bool): if set to `True` and `key` already exists, it will be overwritten
+            merge (bool): if set to `True` and `key` already exists and both `data` and the existing data are dictionaries,
+                they will be merged
         """
         raise NotImplementedError()
 
     def remove_additional_metadata(self, path, key):
         """
-        Removes additional metadata under ``key`` for ``name`` on ``path``
+        Removes additional metadata under `key` for `name` on `path`
 
-        :param path: the virtual path to the file for which to remove the metadata under ``key``
-        :param key: the key to remove
+        Arguments:
+            path (str): virtual path to the file for which to remove additional metadata
+            key (str): key of metadata to remove
         """
         raise NotImplementedError()
 
     def canonicalize(self, path):
         """
-        Canonicalizes the given ``path``. The ``path`` may consist of both folder and file name, the underlying
+        Canonicalizes the given `path`.
+
+        The `path` may consist of both folder and file name, the underlying
         implementation must separate those if necessary.
 
-        By default, this calls :func:`~octoprint.filemanager.StorageInterface.sanitize`, which also takes care
+        By default, this calls [StorageInterface.sanitize][octoprint.filemanager.storage.StorageInterface.sanitize], which also takes care
         of stripping any invalid characters.
 
-        Args:
-                path: the path to canonicalize
+        Arguments:
+            path (str): the path to canonicalize
 
         Returns:
-                a 2-tuple containing the canonicalized path and file name
-
+            (tuple): a 2-tuple containing the canonicalized path and file name
         """
         return self.sanitize(path)
 
     def sanitize(self, path):
         """
-        Sanitizes the given ``path``, stripping it of all invalid characters. The ``path`` may consist of both
-        folder and file name, the underlying implementation must separate those if necessary and sanitize individually.
+        Sanitizes the given `path`, stripping it of all invalid characters.
 
-        :param string path: the path to sanitize
-        :return: a 2-tuple containing the sanitized path and file name
+        The `path` may consist of both folder and file name, the underlying
+        implementation must separate those if necessary and sanitize individually.
+
+        Arguments:
+            path (str): the path to sanitize
+
+        Returns:
+            (tuple): a 2-tuple containing the sanitized path and file name
         """
         raise NotImplementedError()
 
     def sanitize_path(self, path):
         """
-        Sanitizes the given folder-only ``path``, stripping it of all invalid characters.
-        :param string path: the path to sanitize
-        :return: the sanitized path
+        Sanitizes the given folder-only `path`, stripping it of all invalid characters.
+
+        Arguments:
+            path (str): the path to sanitize
+
+        Returns:
+            (str): the sanitized path
         """
         raise NotImplementedError()
 
     def sanitize_name(self, name):
         """
-        Sanitizes the given file ``name``, stripping it of all invalid characters.
-        :param string name: the file name to sanitize
-        :return: the sanitized name
+        Sanitizes the given file `name`, stripping it of all invalid characters.
+
+        Arguments:
+            name (str): the file name to sanitize
+
+        Returns:
+            (str): the sanitized file name
         """
         raise NotImplementedError()
 
     def split_path(self, path):
         """
-        Split ``path`` into base directory and file name.
-        :param path: the path to split
-        :return: a tuple (base directory, file name)
+        Split `path` into base directory and file name.
+
+        Arguments:
+            path (str): the path to split
+
+        Returns:
+            (tuple): a 2-tuple containing the base directory and file name
         """
         raise NotImplementedError()
 
     def join_path(self, *path):
         """
         Join path elements together
-        :param path: path elements to join
-        :return: joined representation of the path to be usable as fully qualified path for further operations
+
+        Arguments:
+            path (str): the path elements to join
+
+        Returns:
+            (str): joined representation of the path to be usable as fully qualified path for further operations
         """
         raise NotImplementedError()
 
     def path_on_disk(self, path):
         """
-        Retrieves the path on disk for ``path``.
+        Retrieves the path on disk for `path`.
 
-        Note: if the storage is not on disk and there exists no path on disk to refer to it, this method should
-        raise an :class:`io.UnsupportedOperation`
+        !!! note
 
-        Opposite of :func:`path_in_storage`.
+            If the storage is not on disk and there exists no path on disk to refer to it, this method should
+            raise an [io.UnsupportedOperation][]
 
-        :param string path: the virtual path for which to retrieve the path on disk
-        :return: the path on disk to ``path``
+        Opposite of `path_in_storage`.
+
+        Arguments:
+            path (str): the virtual path for which to retrieve the path on disk
+
+        Returns:
+            (str): the path on disk to `path`
         """
         raise NotImplementedError()
 
     def path_in_storage(self, path):
         """
-        Retrieves the equivalent in the storage adapter for ``path``.
+        Retrieves the equivalent in the storage adapter for `path`.
 
-        Opposite of :func:`path_on_disk`.
+        Opposite of `path_on_disk`.
 
-        :param string path: the path for which to retrieve the storage path
-        :return: the path in storage to ``path``
+        Arguments:
+            path (str): the path on disk for which to retrieve the storage path
+
+        Returns:
+            (str): the path in storage to `path`
         """
         raise NotImplementedError()
 
@@ -455,22 +531,23 @@ class StorageError(Exception):
 
 class LocalFileStorage(StorageInterface):
     """
-    The ``LocalFileStorage`` is a storage implementation which holds all files, folders and metadata on disk.
+    The `LocalFileStorage` is a storage implementation which holds all files, folders and metadata on disk.
 
-    Metadata is managed inside ``.metadata.json`` files in the respective folders, indexed by the sanitized filenames
+    Metadata is managed inside `.metadata.json` files in the respective folders, indexed by the sanitized filenames
     stored within the folder. Metadata access is managed through an LRU cache to minimize access overhead.
 
-    This storage type implements :func:`path_on_disk`.
+    This storage type implements `path_on_disk`.
     """
 
     def __init__(self, basefolder, create=False, really_universal=False):
         """
-        Initializes a ``LocalFileStorage`` instance under the given ``basefolder``, creating the necessary folder
-        if necessary and ``create`` is set to ``True``.
+        Initializes a `LocalFileStorage` instance under the given `basefolder`, creating the necessary folder
+        if necessary and `create` is set to `True`.
 
-        :param string basefolder:     the path to the folder under which to create the storage
-        :param bool create:           ``True`` if the folder should be created if it doesn't exist yet, ``False`` otherwise
-        :param bool really_universal: ``True`` if the file names should be forced to really universal, ``False`` otherwise
+        Arguments:
+            basefolder (str): the path to the folder under which to create the storage
+            create (bool): `True` if the folder should be created if it doesn't exist yet, `False` otherwise
+            really_universal (bool): `True` if the file names should be forced to be really universal, `False` otherwise
         """
         self._logger = logging.getLogger(__name__)
 
@@ -1121,18 +1198,26 @@ class LocalFileStorage(StorageInterface):
 
     def sanitize(self, path):
         """
-        Returns a ``(path, name)`` tuple derived from the provided ``path``.
+        Returns a `(path, name)` tuple derived from the provided `path`.
 
-        ``path`` may be:
-          * a storage path
-          * an absolute file system path
-          * a tuple or list containing all individual path elements
-          * a string representation of the path
-          * with or without a file name
+        `path` may be:
+        - a storage path
+        - an absolute file system path
+        - a tuple or list containing all individual path elements
+        - a string representation of the path
+        - with or without a file name
 
-        Note that for a ``path`` without a trailing slash the last part will be considered a file name and
-        hence be returned at second position. If you only need to convert a folder path, be sure to
-        include a trailing slash for a string ``path`` or an empty last element for a list ``path``.
+        !!! note
+
+            For a `path` without a trailing slash the last part will be considered a file name and
+            hence be returned at second position. If you only need to convert a folder path, be sure to
+            include a trailing slash for a string `path` or an empty last element for a list `path`.
+
+        Arguments:
+            path (str | list | tuple): The path to sanitize
+
+        Returns:
+            (tuple): The sanitized path and name
         """
 
         path, name = self.canonicalize(path)
@@ -1161,18 +1246,35 @@ class LocalFileStorage(StorageInterface):
         return path, name
 
     def sanitize_name(self, name):
-        """
-        Raises a :class:`ValueError` for a ``name`` containing ``/`` or ``\\``. Otherwise
-        sanitizes the given ``name`` using ``octoprint.files.sanitize_filename``. Also
-        strips any leading ``.``.
+        r"""
+        Sanitizes the given `name` using `sanitize_filename`.
+
+        Strips any leading `.`.
+
+        Arguments:
+            name (str): The name to sanitize
+
+        Returns:
+            (str): The sanitized name
+
+        Raises:
+            ValueError: If the name contains `/` or `\`
         """
         return sanitize_filename(name, really_universal=self._really_universal)
 
     def sanitize_path(self, path):
         """
-        Ensures that the on disk representation of ``path`` is located under the configured basefolder. Resolves all
-        relative path elements (e.g. ``..``) and sanitizes folder names using :func:`sanitize_name`. Final path is the
-        absolute path including leading ``basefolder`` path.
+        Sanitizes the given `path`.
+
+        Ensures that the on disk representation of `path` is located under the configured `basefolder`.
+        Resolves all relative path elements (e.g. `..`) and sanitizes folder names using `sanitize_name`.
+        The final path is the absolute path, including the leading `basefolder` path.
+
+        Arguments:
+            path (str): The path to sanitize
+
+        Returns:
+            (str): The sanitized path
         """
         path = to_unicode(path)
 

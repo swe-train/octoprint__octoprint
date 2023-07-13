@@ -1,6 +1,8 @@
 """
 This module bundles commonly used utility methods or helper classes that are used in multiple places within
 OctoPrint's source code.
+
+[[ version_changed 1.8.0 ]]
 """
 
 

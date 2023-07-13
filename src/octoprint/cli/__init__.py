@@ -38,15 +38,15 @@ def init_platform_for_cli(ctx):
     Plugin implementations will be initialized, but only with a subset of the usual
     property injections:
 
-       * _identifier and everything else parsed from metadata
-       * _logger
-       * _connectivity_checker
-       * _environment_detector
-       * _event_bus
-       * _plugin_manager
-       * _settings
+    - `_identifier` and everything else parsed from metadata
+    - `_logger`
+    - `_connectivity_checker`
+    - `_environment_detector`
+    - `_event_bus`
+    - `_plugin_manager`
+    - `_settings`
 
-    Returns: the same list of components as returned by ``init_platform``
+    Returns: the same list of components as returned by `init_platform`
     """
 
     from octoprint import (
@@ -112,10 +112,10 @@ class HiddenOption(click.Option):
 
 def hidden_option(*param_decls, **attrs):
     """Attaches a hidden option to the command.  All positional arguments are
-    passed as parameter declarations to :class:`Option`; all keyword
+    passed as parameter declarations to [Option][click.Option]; all keyword
     arguments are forwarded unchanged.  This is equivalent to creating an
-    :class:`Option` instance manually and attaching it to the
-    :attr:`Command.params` list.
+    [Option][click.Option] instance manually and attaching it to the
+    [Command.params][click.Command.params] list.
     """
 
     import inspect
@@ -162,7 +162,7 @@ def bulk_options(options):
     """
     Utility decorator to decorate a function with a list of click decorators.
 
-    The provided list of ``options`` will be reversed to ensure correct
+    The provided list of `options` will be reversed to ensure correct
     processing order (inverse from what would be intuitive).
     """
 
@@ -182,7 +182,7 @@ def standard_options(hidden=False):
     """
     Decorator to add the standard options shared among all "octoprint" commands.
 
-    If ``hidden`` is set to ``True``, the options will be available on the command but not
+    If `hidden` is set to `True`, the options will be available on the command but not
     listed in its help page.
     """
 

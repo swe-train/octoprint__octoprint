@@ -1,10 +1,9 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
 from typing import Dict, List, Optional
 
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
 
 CONST_15MIN = 15 * 60
@@ -133,18 +132,12 @@ class IpCheckConfig(BaseModel):
     """Additional non-local subnets to consider trusted, in CIDR notation, e.g. `192.168.1.0/24`."""
 
 
-class SameSiteEnum(str, Enum):
-    strict = "Strict"
-    lax = "Lax"
-    none = "None"
-
-
 @with_attrs_docs
 class CookiesConfig(BaseModel):
     secure: bool = False
     """Whether to set the `Secure` flag to true on cookies. Only set to true if you are running OctoPrint behind a reverse proxy taking care of SSL termination."""
 
-    samesite: Optional[SameSiteEnum] = SameSiteEnum.lax
+    samesite: Optional[Literal["Strict", "Lax", "None"]] = "Lax"
     """`SameSite` setting to use on the cookies. Possible values are `None`, `Lax` and `Strict`. Defaults to `Lax`. Be advised that if forced unset, this has security implications as many browsers now default to `Lax` unless you configure cookies to be set with `Secure` flag set, explicitly set `SameSite` setting here and also serve OctoPrint over https. The `Lax` setting is known to cause with embedding OctoPrint in frames. See also ["Feature: Cookies default to SameSite=Lax"](https://www.chromestatus.com/feature/5088147346030592), ["Feature: Reject insecure SameSite=None cookies"](https://www.chromestatus.com/feature/5633521622188032) and [issue #3482](https://github.com/OctoPrint/OctoPrint/issues/3482)."""
 
 

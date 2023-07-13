@@ -7,10 +7,10 @@ def log_to_handler(logger, handler, level, msg, exc_info=None, extra=None, *args
     Logs to the provided handler only.
 
     Arguments:
-            logger: logger to log to
-            handler: handler to restrict logging to
-            level: level to log at
-            msg: message to log
+            logger (logging.Logger): logger to log to
+            handler (logging.Handler): handler to restrict logging to
+            level (int): level to log at
+            msg (str): message to log
             exc_info: optional exception info
             extra: optional extra data
             *args: log args
@@ -51,18 +51,18 @@ def log_to_handler(logger, handler, level, msg, exc_info=None, extra=None, *args
 
 def get_handler(name, logger=None):
     """
-    Retrieves the handler named ``name``.
+    Retrieves the handler named `name`.
 
-    If optional ``logger`` is provided, search will be
+    If optional `logger` is provided, search will be
     limited to that logger, otherwise the root logger will be
     searched.
 
     Arguments:
-            name: the name of the handler to look for
-            logger: (optional) the logger to search in, root logger if not provided
+            name (str): the name of the handler to look for
+            logger (logging.loggers.Logger): (optional) the logger to search in, root logger if not provided
 
     Returns:
-        the handler if it could be found, None otherwise
+        (logging.handlers.Handler | None): the handler if it could be found, `None` otherwise
     """
     import logging
 
@@ -116,13 +116,13 @@ def get_divider_line(c, message=None, length=78, indent=3):
         AssertionError: indent is not an int
 
     Arguments:
-            c: character to use for the line
-            message: message to print in the line
-            length: length of the line
-            indent: indentation of message in line
+            c (str): character to use for the line
+            message (str): message to print in the line
+            length (int): length of the line
+            indent (int): indentation of message in line
 
     Returns:
-            formatted divider line
+            (str): formatted divider line
     """
 
     assert isinstance(c, str), "c is not text"
@@ -143,6 +143,16 @@ def get_divider_line(c, message=None, length=78, indent=3):
 
 
 def prefix_multilines(text: str, prefix: str = ": ") -> str:
+    """
+    Prefixes all lines of the given text with the given prefix.
+
+    Arguments:
+        text (str): text to prefix
+        prefix (str): prefix to use
+
+    Returns:
+        (str): prefixed text
+    """
     from octoprint.util import to_unicode
 
     lines = text.splitlines()

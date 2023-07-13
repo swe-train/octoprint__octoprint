@@ -11,7 +11,7 @@ click.disable_unicode_literals_warning = True
 
 class OctoPrintDevelCommands(click.MultiCommand):
     """
-    Custom `click.MultiCommand <http://click.pocoo.org/5/api/#click.MultiCommand>`_
+    Custom [click.MultiCommand][]
     implementation that provides commands relevant for (plugin) development
     based on availability of development dependencies.
     """
@@ -208,10 +208,12 @@ class OctoPrintDevelCommands(click.MultiCommand):
             """
             Installs the local plugin in development mode.
 
-            Note: This can NOT be used to install plugins from remote locations
-            such as the plugin repository! It is strictly for local development
-            of plugins, to ensure the plugin is installed (editable) into the
-            same python environment that OctoPrint is installed under.
+            !!! note:
+
+                This can NOT be used to install plugins from remote locations
+                such as the plugin repository! It is strictly for local development
+                of plugins, to ensure the plugin is installed (editable) into the
+                same python environment that OctoPrint is installed under.
             """
 
             import os

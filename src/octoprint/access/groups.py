@@ -13,7 +13,7 @@ from octoprint.util import atomic_write, yaml
 from octoprint.vendor.flask_principal import Need, Permission
 
 GroupNeed = partial(Need, "group")
-GroupNeed.__doc__ = """A need with the method preset to `"group"`."""
+GroupNeed.__doc__ = """A need with the method preset to `group`."""
 
 
 class GroupPermission(Permission):

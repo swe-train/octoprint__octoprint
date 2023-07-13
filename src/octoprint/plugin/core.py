@@ -1,21 +1,5 @@
 """
 In this module resides the core data structures and logic of the plugin system.
-
-.. autoclass:: PluginManager
-   :members:
-
-.. autoclass:: PluginInfo
-   :members:
-
-.. autoclass:: Plugin
-   :members:
-
-.. autoclass:: RestartNeedingPlugin
-   :members:
-
-.. autoclass:: SortablePlugin
-   :members:
-
 """
 
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
@@ -26,7 +10,7 @@ import fnmatch
 import inspect
 import logging
 import os
-from collections import OrderedDict, defaultdict, namedtuple
+from collections import OrderedDict, defaultdict
 from os import scandir
 
 import pkg_resources
@@ -53,6 +37,36 @@ def _load_module(name, spec):
 
 
 def parse_plugin_metadata(path):
+    """
+    Parses the plugin metadata from the plugin at the given path.
+
+    If the provided path is a dictionary, it is assumed to be the path to a Python module with a contained `__init__.py`.
+
+    The metadata is parsed from the AST of the plugin's Python source. If the plugin could not be parsed due to a syntax
+    error in its Python source, a `SyntaxError` is raised.
+
+    Only the following control properties are attempted to be parsed from the AST:
+
+    - `__plugin_name__`
+    - `__plugin_version__`
+    - `__plugin_author__`
+    - `__plugin_description__`
+    - `__plugin_url__`
+    - `__plugin_license__`
+    - `__plugin_pythoncompatibility__`
+
+    This is also the list of plugin metadata available even for disabled/unloaded plugins. For all other control
+    properties to be available, the plugin must be loaded by OctoPrint.
+
+    Arguments:
+        path (str): The path to the plugin to parse the metadata from.
+
+    Returns:
+        (dict): The parsed metadata. If no metadata could be parsed, an empty dictionary is returned.
+
+    Raises:
+        (SyntaxError): If the plugin could not be parsed due to a syntax error in its Python source.
+    """
     result = {}
     logger = logging.getLogger(__name__)
 
@@ -157,28 +171,28 @@ def parse_plugin_metadata(path):
 
 class ControlProperties:
     attr_name = "__plugin_name__"
-    """ Module attribute from which to retrieve the plugin's human readable name. """
+    """Module attribute from which to retrieve the plugin's human readable name."""
 
     attr_description = "__plugin_description__"
-    """ Module attribute from which to retrieve the plugin's description. """
+    """Module attribute from which to retrieve the plugin's description."""
 
     attr_disabling_DISCOURAGED = "__plugin_disabling_discouraged__"
-    """ Module attribute from which to retrieve the reason why disabling the plugin is discouraged. Only effective if ``self.bundled`` is True. """
+    """Module attribute from which to retrieve the reason why disabling the plugin is discouraged. Only effective if ``self.bundled`` is True."""
 
     attr_version = "__plugin_version__"
-    """ Module attribute from which to retrieve the plugin's version. """
+    """Module attribute from which to retrieve the plugin's version."""
 
     attr_author = "__plugin_author__"
-    """ Module attribute from which to retrieve the plugin's author. """
+    """Module attribute from which to retrieve the plugin's author."""
 
     attr_url = "__plugin_url__"
-    """ Module attribute from which to retrieve the plugin's website URL. """
+    """Module attribute from which to retrieve the plugin's website URL."""
 
     attr_license = "__plugin_license__"
-    """ Module attribute from which to retrieve the plugin's license. """
+    """Module attribute from which to retrieve the plugin's license."""
 
     attr_privacypolicy = "__plugin_privacypolicy__"
-    """ Module attribute from which to retrieve the plugin's privacy policy URL, if any. """
+    """Module attribute from which to retrieve the plugin's privacy policy URL, if any."""
 
     attr_pythoncompat = "__plugin_pythoncompat__"
     """
@@ -201,119 +215,105 @@ class ControlProperties:
     """
 
     attr_hooks = "__plugin_hooks__"
-    """ Module attribute from which to retrieve the plugin's provided hooks. """
+    """Module attribute from which to retrieve the plugin's provided hooks."""
 
     attr_implementation = "__plugin_implementation__"
-    """ Module attribute from which to retrieve the plugin's provided mixin implementation. """
+    """Module attribute from which to retrieve the plugin's provided mixin implementation."""
 
     attr_helpers = "__plugin_helpers__"
-    """ Module attribute from which to retrieve the plugin's provided helpers. """
+    """Module attribute from which to retrieve the plugin's provided helpers."""
 
     attr_check = "__plugin_check__"
-    """ Module attribute which to call to determine if the plugin can be loaded. """
+    """Module attribute which to call to determine if the plugin can be loaded."""
 
     attr_load = "__plugin_load__"
-    """ Module attribute which to call when loading the plugin. """
+    """Module attribute which to call when loading the plugin."""
 
     attr_unload = "__plugin_unload__"
-    """ Module attribute which to call when unloading the plugin. """
+    """Module attribute which to call when unloading the plugin."""
 
     attr_enable = "__plugin_enable__"
-    """ Module attribute which to call when enabling the plugin. """
+    """Module attribute which to call when enabling the plugin."""
 
     attr_disable = "__plugin_disable__"
-    """ Module attribute which to call when disabling the plugin. """
+    """Module attribute which to call when disabling the plugin."""
 
     default_pythoncompat = ">=2.7,<3"
+    """Module attribute from which to retrieve the plugin's python compatibility string."""
 
     @classmethod
     def all(cls):
+        """
+        Returns a list of all recognized control properties, as defined in this class.
+        """
         return [getattr(cls, key) for key in dir(cls) if key.startswith("attr_")]
 
 
-_EntryPointOrigin = namedtuple(
-    "EntryPointOrigin", "type, entry_point, module_name, package_name, package_version"
-)
-
-
-class EntryPointOrigin(_EntryPointOrigin):
+class EntryPointOrigin:
     """
     Origin of a plugin registered via an entry point.
-
-    .. attribute:: type
-
-       Always ``entry_point``.
-
-    .. attribute:: entry_point
-
-       Name of the entry point, usually ``octoprint.plugin``.
-
-    .. attribute:: module_name
-
-       Module registered to the entry point.
-
-    .. attribute:: package_name
-
-       Python package containing the entry point.
-
-    .. attribute:: package_version
-
-       Version of the python package containing the entry point.
     """
 
+    def __init__(self, type, entry_point, module_name, package_name, package_version):
+        self.type = type
+        """Always `entry_point`."""
 
-_FolderOrigin = namedtuple("FolderOrigin", "type, folder")
+        self.entry_point = entry_point
+        """Name of the entry point, usually `octoprint.plugin`."""
+
+        self.module_name = module_name
+        """Module registered to the entry point."""
+
+        self.package_name = package_name
+        """Python package containing the entry point."""
+
+        self.package_version = package_version
+        """Version of the python package containing the entry point."""
 
 
-class FolderOrigin(_FolderOrigin):
+class FolderOrigin:
     """
     Origin of a (single file) plugin loaded from a plugin folder.
-
-    .. attribute:: type
-
-       Always `folder`.
-
-    .. attribute:: folder
-
-       Folder path from which the plugin was loaded.
     """
 
+    def __init__(self, type, folder):
+        self.type = type
+        """Always `folder`."""
 
-_ModuleOrigin = namedtuple("ModuleOrigin", "type, module_name, folder")
+        self.folder = folder
+        """Folder path from which the plugin was loaded."""
 
 
-class ModuleOrigin(_ModuleOrigin):
+class ModuleOrigin:
     """
     Origin of a (single file) plugin loaded from a plugin folder.
-
-    .. attribute:: type
-
-       Always `module`.
-
-    .. attribute:: module_name
-
-       Name of the module from which the plugin was loaded.
-
-    .. attribute:: folder
-
-       Folder path from which the plugin was loaded.
     """
+
+    def __init__(self, type, module_name, folder):
+        self.type = type
+        """Always `module`."""
+
+        self.module_name = module_name
+        """Name of the module from which the plugin was loaded."""
+
+        self.folder = folder
+        """Folder path from which the plugin was loaded."""
 
 
 class PluginInfo:
     """
-    The :class:`PluginInfo` class wraps all available information about a registered plugin.
+    The `PluginInfo` class wraps all available information about a registered plugin.
 
-    This includes its meta data (like name, description, version, etc) as well as the actual plugin extensions like
-    implementations, hooks and helpers.
+    This includes its metadata (like name, description, version, etc) as well as the actual plugin extensions like
+    implementation, hooks and helpers.
 
     It works on Python module objects and extracts the relevant data from those via accessing the
-    :ref:`control properties <sec-plugins-controlproperties>`.
+    control properties.
 
     Arguments:
         key (str): Identifier of the plugin
         location (str): Installation folder of the plugin
-        instance (module): Plugin module instance - this may be ``None`` if the plugin has been blacklisted!
+        instance (module): Plugin module instance - this may be `None` if the plugin has been blacklisted!
         name (str): Human readable name of the plugin
         version (str): Version of the plugin
         description (str): Description of the plugin
@@ -341,8 +341,8 @@ class PluginInfo:
 
         self.origin = None
         """
-        The origin from which this plugin was loaded, either a :class:`EntryPointOrigin`, :class:`FolderOrigin`
-        or :class:`ModuleOrigin` instance. Set during loading, initially ``None``.
+        The origin from which this plugin was loaded, either a [octoprint.plugin.core.EntryPointOrigin][], [octoprint.plugin.core.FolderOrigin][]
+        or [octoprint.plugin.core.ModuleOrigin] instance. Set during loading, initially `None`.
         """
 
         self.enabled = True
@@ -389,9 +389,18 @@ class PluginInfo:
         """
         Validates the plugin for various validation phases.
 
-        ``phase`` can be one of ``before_import``, ``before_load``, ``after_load``.
+        `phase` can be one of `before_import`, `before_load`, `after_load`.
 
-        Used by :class:`PluginManager`, should not be used elsewhere.
+        Used by [octoprint.plugin.core.PluginManager][], should not be used elsewhere.
+
+        Arguments:
+            phase (str): Phase to validate for, one of `before_import`, `before_load`, `after_load`
+            additional_validators (list): List of additional validator functions to call, each of which should accept
+                two arguments, `phase` and `plugin_info`, and return a boolean indicating whether the plugin should
+                be considered valid for the given phase.
+
+        Returns:
+            (bool): Whether the plugin is valid for the given phase.
         """
         result = True
 
@@ -433,32 +442,32 @@ class PluginInfo:
         enabled_strs=("* ", "  ", "X ", "C "),
     ):
         """
-        Long string representation of the plugin's information. Will return a string of the format ``<enabled><str(self)><bundled><location>``.
+        Long string representation of the plugin's information. Will return a string of the format `<enabled><str(self)><bundled><location>`.
 
-        ``enabled``, ``bundled`` and ``location`` will only be displayed if the corresponding flags are set to ``True``.
-        The will be filled from ``enabled_str``, ``bundled_str`` and ``location_str`` as follows:
+        `enabled`, `bundled` and `location` will only be displayed if the corresponding flags are set to `True`.
+        They will be filled from `enabled_str`, `bundled_str` and `location_str` as follows:
 
-        ``enabled_str``
-            a 4-tuple, the first entry being the string to insert when the plugin is enabled, the second
+        `enabled_str`
+        :   a 4-tuple, the first entry being the string to insert when the plugin is enabled, the second
             entry the string to insert when it is not, the third entry the string when it is blacklisted
-            and the fourth when it is incompatible.
-        ``bundled_str``
-            a 2-tuple, the first entry being the string to insert when the plugin is bundled, the second
-            entry the string to insert when it is not.
-        ``location_str``
-            a format string (to be parsed with ``str.format``), the ``{location}`` placeholder will be
-            replaced with the plugin's installation folder on disk.
+            and the fourth when it is incompatible. Example: `("* ", "  ", "X ", "C ")`
+        `bundled_str`
+        :   a 2-tuple, the first entry being the string to insert when the plugin is bundled, the second
+            entry the string to insert when it is not. Example: `(" [B]", "")`
+        `location_str`
+        :   a format string (to be parsed with `str.format`), the `{location}` placeholder will be
+            replaced with the plugin's installation folder on disk. Example: `" - {location}"`
 
         Arguments:
-            show_enabled (boolean): whether to show the ``enabled`` part
+            show_enabled (boolean): whether to show the `enabled` part
             enabled_strs (tuple): the 2-tuple containing the two possible strings to use for displaying the enabled state
-            show_bundled (boolean): whether to show the ``bundled`` part
+            show_bundled (boolean): whether to show the `bundled` part
             bundled_strs(tuple): the 2-tuple containing the two possible strings to use for displaying the bundled state
-            show_location (boolean): whether to show the ``location`` part
+            show_location (boolean): whether to show the `location` part
             location_str (str): the format string to use for displaying the plugin's installation location
 
         Returns:
-            str: The long string representation of the plugin as described above
+            (str): The long string representation of the plugin as described above
         """
         if show_enabled:
             if self.incompatible:
@@ -492,7 +501,7 @@ class PluginInfo:
             hook (str): Hook to return.
 
         Returns:
-            callable or None: Handler for the requested ``hook`` or None if no handler is registered.
+            (callable | None): Handler for the requested `hook`, or `None` if no handler is registered.
         """
 
         if hook not in self.hooks:
@@ -501,11 +510,13 @@ class PluginInfo:
 
     def get_implementation(self, *types):
         """
+        Returns the plugin's implementation if it matches all of the requested `types`, `None` otherwise.
+
         Arguments:
-            types (list): List of :class:`Plugin` sub classes the implementation needs to implement.
+            types (list): List of [octoprint.plugin.core.Plugin][] sub classes the implementation needs to implement.
 
         Returns:
-            object: The plugin's implementation if it matches all of the requested ``types``, None otherwise.
+            (object | None): The plugin's implementation if it matches all of the requested `types`, `None` otherwise.
         """
 
         if self.implementation and all(
@@ -518,11 +529,13 @@ class PluginInfo:
     @property
     def name(self):
         """
-        Human readable name of the plugin. Will be taken from name attribute of the plugin module if available,
-        otherwise from the ``name`` supplied during construction with a fallback to ``key``.
+        Human readable name of the plugin.
+
+        Will be taken from the name attribute of the plugin module if available, otherwise from the
+        `name` supplied during construction with a fallback to `key`.
 
         Returns:
-            str: Name of the plugin, fallback is the plugin's identifier.
+            (str): Name of the plugin, fallback is the plugin's identifier.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_name,
@@ -533,12 +546,13 @@ class PluginInfo:
     @property
     def description(self):
         """
-        Description of the plugin. Will be taken from the description attribute of the plugin module as defined in
-        :attr:`attr_description` if available, otherwise from the ``description`` supplied during construction.
-        May be None.
+        Description of the plugin.
+
+        Will be taken from the description attribute of the plugin module if available, otherwise from the
+        `description` supplied during construction. May be `None`.
 
         Returns:
-            str or None: Description of the plugin.
+            (str | None): Description of the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_description,
@@ -549,12 +563,15 @@ class PluginInfo:
     @property
     def disabling_discouraged(self):
         """
-        Reason why disabling of this plugin is discouraged. Only evaluated for bundled plugins! Will be taken from
-        the disabling_discouraged attribute of the plugin module as defined in :attr:`attr_disabling_discouraged` if
-        available. False if unset or plugin not bundled.
+        Reason why disabling this plugin is discouraged.
+
+        Only evaluated for bundled plugins!
+
+        Will be taken from the `disabling_discouraged` attribute of the plugin module if
+        available. `False` if unset or plugin not bundled.
 
         Returns:
-            str or None: Reason why disabling this plugin is discouraged (only for bundled plugins)
+            (str | bool): Reason why disabling this plugin is discouraged (only for bundled plugins)
         """
         return (
             self._get_instance_attribute(
@@ -567,11 +584,13 @@ class PluginInfo:
     @property
     def version(self):
         """
-        Version of the plugin. Will be taken from the version attribute of the plugin module as defined in
-        :attr:`attr_version` if available, otherwise from the ``version`` supplied during construction. May be None.
+        Version of the plugin.
+
+        Will be taken from the version attribute of the plugin module if available, otherwise from the
+        `version` supplied during construction. May be `None`.
 
         Returns:
-            str or None: Version of the plugin.
+            (str | None): Version of the plugin.
         """
         return (
             self._version
@@ -586,11 +605,13 @@ class PluginInfo:
     @property
     def author(self):
         """
-        Author of the plugin. Will be taken from the author attribute of the plugin module as defined in
-        :attr:`attr_author` if available, otherwise from the ``author`` supplied during construction. May be None.
+        Author of the plugin.
+
+        Will be taken from the author attribute of the plugin module if available, otherwise from the
+        `author` supplied during construction. May be `None`.
 
         Returns:
-            str or None: Author of the plugin.
+            (str | None): Author of the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_author, default=self._author, incl_metadata=True
@@ -599,11 +620,13 @@ class PluginInfo:
     @property
     def url(self):
         """
-        Website URL for the plugin. Will be taken from the url attribute of the plugin module as defined in
-        :attr:`attr_url` if available, otherwise from the ``url`` supplied during construction. May be None.
+        Website URL for the plugin.
+
+        Will be taken from the url attribute of the plugin module if available, otherwise from the
+        `url` supplied during construction. May be `None`.
 
         Returns:
-            str or None: Website URL for the plugin.
+            (str | None): Website URL for the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_url, default=self._url, incl_metadata=True
@@ -612,11 +635,13 @@ class PluginInfo:
     @property
     def license(self):
         """
-        License of the plugin. Will be taken from the license attribute of the plugin module as defined in
-        :attr:`attr_license` if available, otherwise from the ``license`` supplied during construction. May be None.
+        License of the plugin.
+
+        Will be taken from the license attribute of the plugin module if available, otherwise from the
+        `license` supplied during construction. May be `None`.
 
         Returns:
-            str or None: License of the plugin.
+            (str | None): License of the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_license, default=self._license, incl_metadata=True
@@ -625,11 +650,12 @@ class PluginInfo:
     @property
     def privacypolicy(self):
         """
-        Privacy Policy URL of the plugin. Will be taken from the privacy policy attribute of the plugin module
-        as defined in :attr:`attr_privacypolicy` if available. May be None.
+        Privacy Policy URL of the plugin.
+
+        Will be taken from the privacy policy attribute of the plugin module if available. May be `None`.
 
         Returns:
-            str or None: Privacy Policy URL of the plugin.
+            (str | None): Privacy Policy URL of the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_privacypolicy, default=None, incl_metadata=True
@@ -638,11 +664,10 @@ class PluginInfo:
     @property
     def pythoncompat(self):
         """
-        Python compatibility string of the plugin module as defined in :attr:`attr_pythoncompat` if available, otherwise
-        defaults to ``>=2.7,<3``.
+        Python compatibility string of the plugin module if available, otherwise defaults to ``>=2.7,<3``.
 
         Returns:
-            str: Python compatibility string of the plugin
+            (str): Python compatibility string of the plugin
         """
         return self._get_instance_attribute(
             ControlProperties.attr_pythoncompat, default=">=2.7,<3", incl_metadata=True
@@ -653,8 +678,10 @@ class PluginInfo:
         """
         Hidden flag.
 
+        Will be taken from the hidden attribute of the plugin module if available, otherwise defaults to `False`.
+
         Returns:
-            bool: Whether the plugin should be flagged as hidden or not
+            (bool): Whether the plugin should be flagged as hidden or not
         """
         return self._get_instance_attribute(
             ControlProperties.attr_hidden, default=False, incl_metadata=True
@@ -663,22 +690,24 @@ class PluginInfo:
     @property
     def hooks(self):
         """
-        Hooks provided by the plugin. Will be taken from the hooks attribute of the plugin module as defined in
-        :attr:`attr_hooks` if available, otherwise an empty dictionary is returned.
+        Hooks provided by the plugin.
+
+        Will be taken from the hooks attribute of the plugin module if available, otherwise an empty dictionary is returned.
 
         Returns:
-            dict: Hooks provided by the plugin.
+            (dict): Hooks provided by the plugin, mapping from hook name to handler [callable][].
         """
         return self._get_instance_attribute(ControlProperties.attr_hooks, default={})
 
     @property
     def implementation(self):
         """
-        Implementation provided by the plugin. Will be taken from the implementation attribute of the plugin module
-        as defined in :attr:`attr_implementation` if available, otherwise None is returned.
+        Implementation provided by the plugin.
+
+        Will be taken from the implementation attribute of the plugin module if available, otherwise `None` is returned.
 
         Returns:
-            object: Implementation provided by the plugin.
+            (object | None): Implementation provided by the plugin.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_implementation, default=None
@@ -687,22 +716,23 @@ class PluginInfo:
     @property
     def helpers(self):
         """
-        Helpers provided by the plugin. Will be taken from the helpers attribute of the plugin module as defined in
-        :attr:`attr_helpers` if available, otherwise an empty list is returned.
+        Helpers provided by the plugin.
+
+        Will be taken from the helpers attribute of the plugin module if available, otherwise an empty dictionary is returned.
 
         Returns:
-            dict: Helpers provided by the plugin.
+            (dict): Helpers provided by the plugin, mapping from helper name to helper [callable][].
         """
         return self._get_instance_attribute(ControlProperties.attr_helpers, default={})
 
     @property
     def check(self):
         """
-        Method for pre-load check of plugin. Will be taken from the check attribute of the plugin module as defined in
-        :attr:`attr_check` if available, otherwise a lambda always returning True is returned.
+        Method for pre-load check of plugin. Will be taken from the check attribute of the plugin module if available,
+        otherwise a lambda always returning True is returned.
 
         Returns:
-            callable: Check method for the plugin module which should return True if the plugin can be loaded, False
+            (callable): Check method for the plugin module which should return True if the plugin can be loaded, False
                 otherwise.
         """
         return self._get_instance_attribute(
@@ -712,11 +742,11 @@ class PluginInfo:
     @property
     def load(self):
         """
-        Method for loading the plugin module. Will be taken from the load attribute of the plugin module as defined
-        in :attr:`attr_load` if available, otherwise a no-operation lambda will be returned.
+        Method for loading the plugin module. Will be taken from the load attribute of the plugin module if available,
+        otherwise a no-operation lambda will be returned.
 
         Returns:
-            callable: Load method for the plugin module.
+            (callable): Load method for the plugin module.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_load, default=lambda: True
@@ -725,11 +755,11 @@ class PluginInfo:
     @property
     def unload(self):
         """
-        Method for unloading the plugin module. Will be taken from the unload attribute of the plugin module as defined
-        in :attr:`attr_unload` if available, otherwise a no-operation lambda will be returned.
+        Method for unloading the plugin module. Will be taken from the unload attribute of the plugin module if available,
+        otherwise a no-operation lambda will be returned.
 
         Returns:
-            callable: Unload method for the plugin module.
+            (callable): Unload method for the plugin module.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_unload, default=lambda: True
@@ -738,11 +768,11 @@ class PluginInfo:
     @property
     def enable(self):
         """
-        Method for enabling the plugin module. Will be taken from the enable attribute of the plugin module as defined
-        in :attr:`attr_enable` if available, otherwise a no-operation lambda will be returned.
+        Method for enabling the plugin module. Will be taken from the enable attribute of the plugin module if available,
+        otherwise a no-operation lambda will be returned.
 
         Returns:
-            callable: Enable method for the plugin module.
+            (callable): Enable method for the plugin module.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_enable, default=lambda: True
@@ -751,11 +781,11 @@ class PluginInfo:
     @property
     def disable(self):
         """
-        Method for disabling the plugin module. Will be taken from the disable attribute of the plugin module as defined
-        in :attr:`attr_disable` if available, otherwise a no-operation lambda will be returned.
+        Method for disabling the plugin module. Will be taken from the disable attribute of the plugin module if available,
+        otherwise a no-operation lambda will be returned.
 
         Returns:
-            callable: Disable method for the plugin module.
+            (callable): Disable method for the plugin module.
         """
         return self._get_instance_attribute(
             ControlProperties.attr_disable, default=lambda: True
@@ -786,6 +816,7 @@ class PluginInfo:
 
     @property
     def control_properties(self):
+        """The control properties recognized in the plugin's AST."""
         return ControlProperties.all()
 
     @property
@@ -806,7 +837,7 @@ class PluginInfo:
 
 class PluginManager:
     """
-    The :class:`PluginManager` is the central component for finding, loading and accessing plugins provided to the
+    The `PluginManager` is the central component for finding, loading and accessing plugins provided to the
     system.
 
     It is able to discover plugins both through possible file system locations as well as customizable entry points.
@@ -943,6 +974,17 @@ class PluginManager:
         }
 
     def find_plugins(self, existing=None, ignore_uninstalled=True, incl_all_found=False):
+        """
+        Run the plugin discovery process and return the added plugins.
+
+        Arguments:
+            existing (dict): Existing plugins to check against
+            ignore_uninstalled (bool): Ignore plugins marked as uninstalled
+            incl_all_found (bool): Return all found plugins, not just the added ones
+
+        Returns:
+            (dict | tuple): Dictionary of added plugins or tuple of added (`dict`) and all found (`list`) plugins
+        """
         added, found = self._find_plugins(
             existing=existing, ignore_uninstalled=ignore_uninstalled
         )
@@ -1351,10 +1393,12 @@ class PluginManager:
         """
         Reloads plugins, detecting newly added ones in the process.
 
-        Args:
-                startup (boolean): whether this is called during startup of the platform
-                initialize_implementations (boolean): whether plugin implementations should be initialized
-                force_reload (list): list of plugin identifiers which should be force reloaded
+        Logs the currently detected plugins and their status.
+
+        Arguments:
+            startup (boolean): whether this is called during startup of the platform
+            initialize_implementations (boolean): whether plugin implementations should be initialized
+            force_reload (list): list of plugin identifiers which should be force reloaded
         """
         self.logger.info(
             "Loading plugins from {folders} and installed plugin packages...".format(
@@ -1465,11 +1509,11 @@ class PluginManager:
 
     def mark_plugin(self, name, **flags):
         """
-        Mark plugin ``name`` with an arbitrary number of flags.
+        Mark plugin `name` with an arbitrary number of flags.
 
-        Args:
-                name (str): plugin identifier
-                **flags (dict): dictionary of flag names and values
+        Arguments:
+            name (str): plugin identifier
+            flags (dict): dictionary of flag names and values
         """
         if name not in self.plugins:
             self.logger.debug(f"Trying to mark an unknown plugin {name}")
@@ -1487,12 +1531,12 @@ class PluginManager:
         """
         Checks whether a plugin has been marked with a certain flag.
 
-        Args:
-                name (str): the plugin's identifier
-                flag (str): the flag to check
+        Arguments:
+            name (str): the plugin's identifier
+            flag (str): the flag to check
 
         Returns:
-                (boolean): True if the plugin has been flagged, False otherwise
+            (bool): `True` if the plugin has been flagged, `False` otherwise
         """
         if name not in self.plugins:
             return False
@@ -1502,6 +1546,18 @@ class PluginManager:
     def load_plugin(
         self, name, plugin=None, startup=False, initialize_implementation=True
     ):
+        """
+        Loads plugin `name`, triggering all lifecycle events as needed.
+
+        Arguments:
+            name (str): plugin identifier
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+            startup (bool): whether this is called during startup of the platform
+            initialize_implementation (bool): whether plugin implementations should be initialized
+
+        Raises:
+            (octoprint.plugin.core.PluginLifecycleException): if any of the lifecycle events fail
+        """
         if name not in self.plugins:
             self.logger.warning(f"Trying to load an unknown plugin {name}")
             return
@@ -1527,6 +1583,16 @@ class PluginManager:
             self.logger.exception("There was an error loading plugin %s" % name)
 
     def unload_plugin(self, name):
+        """
+        Unloads plugin `name`, triggering all lifecycle events as needed.
+
+        Arguments:
+            name (str): plugin identifier
+
+        Raises:
+            (octoprint.plugin.core.PluginLifecycleException): if any of the lifecycle events fail, in which case
+                the plugin will be ensured to be marked as disabled
+        """
         if name not in self.plugins:
             self.logger.warning(f"Trying to unload unknown plugin {name}")
             return
@@ -1563,7 +1629,24 @@ class PluginManager:
     def enable_plugin(
         self, name, plugin=None, initialize_implementation=True, startup=False
     ):
-        """Enables a plugin"""
+        """
+        Enables a plugin.
+
+        Arguments:
+            name (str): plugin identifier
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+            initialize_implementation (bool): whether plugin implementations should be initialized
+            startup (bool): whether this is called during startup of the platform
+
+        Returns:
+            (bool): `True` if the plugin was enabled, `False` otherwise
+
+        Raises:
+            (octoprint.plugin.core.PluginNeedsRestart): if the plugin needs a server restart to get enabled
+            (octoprint.plugin.core.PluginCantEnable): if the plugin cannot be enabled due to obsolete hooks
+            (octoprint.plugin.core.PluginLifecycleException): if anything fails during validation or activation
+               of the plugin
+        """
         if name not in self.disabled_plugins:
             self.logger.warning(
                 f"Tried to enable plugin {name}, however it is not disabled"
@@ -1613,7 +1696,17 @@ class PluginManager:
         return True
 
     def disable_plugin(self, name, plugin=None):
-        """Disables a plugin"""
+        """
+        Disables a plugin.
+
+        Arguments:
+            name (str): plugin identifier
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+
+        Raises:
+            (octoprint.plugin.core.PluginNeedsRestart): if the plugin needs a server restart to get disabled
+            (octoprint.plugin.core.PluginLifecycleException): if anything fails during deactivation
+        """
         if name not in self.enabled_plugins:
             self.logger.warning(
                 f"Tried to disable plugin {name}, however it is not enabled"
@@ -1740,7 +1833,15 @@ class PluginManager:
                     pass
 
     def is_restart_needing_plugin(self, plugin):
-        """Checks whether the plugin needs a restart on changes"""
+        """
+        Checks whether the plugin needs a restart on changes.
+
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+
+        Returns:
+            (bool): `True` if the plugin needs a server restart on changes, `False` otherwise
+        """
         return (
             plugin.needs_restart
             or self.has_restart_needing_implementation(plugin)
@@ -1748,39 +1849,79 @@ class PluginManager:
         )
 
     def has_restart_needing_implementation(self, plugin):
-        """Checks whether the plugin's implementation needs a restart on changes"""
+        """
+        Checks whether the plugin's implementation needs a restart on changes.
+
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+
+        Returns:
+            (bool): `True` if the plugin's implementation needs a server restart on changes, `False` otherwise
+        """
         return self.has_any_of_mixins(plugin, RestartNeedingPlugin)
 
     def has_restart_needing_hooks(self, plugin):
-        """Checks whether the plugin has any hooks that need a restart on changes"""
+        """
+        Checks whether the plugin has any hooks that need a restart on changes.
+
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+
+        Returns:
+            (bool): `True` if the plugin has any hooks that need a server restart on changes, `False` otherwise
+        """
         return self.has_any_of_hooks(plugin, self.plugin_restart_needing_hooks)
 
     def has_obsolete_hooks(self, plugin):
-        """Checks whether the plugin uses any obsolete hooks"""
+        """
+        Checks whether the plugin uses any of the defined obsolete hooks.
+
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin instance
+
+        Returns:
+            (bool): `True` if the plugin uses any of the defined obsolete hooks, `False` otherwise
+        """
         return self.has_any_of_hooks(plugin, self.plugin_obsolete_hooks)
 
     def is_restart_needing_hook(self, hook):
-        """Checks whether a hook needs a restart on changes"""
+        """
+        Checks whether a hook needs a restart on changes.
+
+        Arguments:
+            hook (str): hook to check
+
+        Returns:
+            (bool): `True` if the hook needs a server restart on changes, `False` otherwise
+        """
         return self.hook_matches_hooks(hook, self.plugin_restart_needing_hooks)
 
     def is_obsolete_hook(self, hook):
-        """Checks whether a hook is obsolete"""
+        """
+        Checks whether a hook is defined obsolete.
+
+        Arguments:
+            hook (str): hook to check
+
+        Returns:
+            (bool): `True` if the hook is defined obsolete, `False` otherwise
+        """
         return self.hook_matches_hooks(hook, self.plugin_obsolete_hooks)
 
     @staticmethod
     def has_any_of_hooks(plugin, *hooks):
         """
-        Tests if the ``plugin`` contains any of the provided ``hooks``.
+        Tests if the plugin contains any of the provided hooks.
 
-        Uses :func:`octoprint.plugin.core.PluginManager.hook_matches_hooks`.
+        Uses [octoprint.plugin.core.PluginManager.hook_matches_hooks][].
 
-        Args:
-                plugin: plugin to test hooks for
-                *hooks: hooks to test against
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin to test hooks for
+            hooks (str): hooks to test against
 
         Returns:
-                (bool): True if any of the plugin's hooks match the provided hooks,
-                        False otherwise.
+            (bool): `True` if any of the plugin's hooks match the provided hooks,
+                    `False` otherwise.
         """
 
         if hooks and len(hooks) == 1 and isinstance(hooks[0], (list, tuple)):
@@ -1804,21 +1945,19 @@ class PluginManager:
     @staticmethod
     def hook_matches_hooks(hook, *hooks):
         """
-        Tests if ``hook`` matches any of the provided ``hooks`` to test for.
+        Tests if `hook` matches any of the provided `hooks` to test for.
 
-        ``hook`` is expected to be an exact hook name.
+        `hook` is expected to be an exact hook name.
 
-        ``hooks`` is expected to be a list containing one or more hook names or
-        patterns. That can be either an exact hook name or an
-        :func:`fnmatch.fnmatch` pattern.
+        `hooks` is expected to be a list containing one or more hook names or
+        patterns. That can be either an exact hook name or an [fnmatch.fnmatch] pattern.
 
-        Args:
-                hook: the hook to test
-                hooks: the hook name patterns to test against
+        Arguments:
+            hook (str): the hook to test
+            hooks (str): the hook name patterns to test against
 
         Returns:
-                (bool): True if the ``hook`` matches any of the ``hooks``, False otherwise.
-
+            (bool): `True` if the `hook` matches any of the `hooks`, `False` otherwise.
         """
 
         if hooks and len(hooks) == 1 and isinstance(hooks[0], (list, tuple)):
@@ -1834,6 +1973,18 @@ class PluginManager:
 
     @staticmethod
     def mixins_matching_bases(klass, *bases):
+        """
+        Returns a set of all mixins of the given `klass` that match any of the
+        provided `bases`.
+
+        Arguments:
+            klass (type): the class to check for mixins
+            bases (type): the base classes to check against
+
+        Returns:
+            (set): a set of all mixins of the given `klass` that match any of the
+                provided `bases`.
+        """
         result = set()
         for c in inspect.getmro(klass):
             if c == klass or c in bases:
@@ -1846,16 +1997,16 @@ class PluginManager:
     @staticmethod
     def has_any_of_mixins(plugin, *mixins):
         """
-        Tests if the ``plugin`` has an implementation implementing any
-        of the provided ``mixins``.
+        Tests if the `plugin` has an implementation implementing any
+        of the provided `mixins`.
 
-        Args:
-                plugin: plugin for which to check the implementation
-                *mixins: mixins to test against
+        Arguments:
+            plugin (octoprint.plugin.core.Plugin): plugin for which to check the implementation
+            mixins (type): mixins to test against
 
         Returns:
-                (bool): True if the plugin's implementation implements any of the
-                        provided mixins, False otherwise.
+            (bool): `True` if the plugin's implementation implements any of the
+                provided mixins, `False` otherwise.
         """
 
         if mixins and len(mixins) == 1 and isinstance(mixins[0], (list, tuple)):
@@ -1876,6 +2027,21 @@ class PluginManager:
         additional_pre_inits=None,
         additional_post_inits=None,
     ):
+        """
+        Initializes all plugin implementations.
+
+        Arguments:
+            additional_injects (dict): additional injects to inject into the implementation, a
+                dict mapping inject names to inject objects
+            additional_inject_factories (list): additional inject factories to use to generate
+                injections into implementations, each included [callable][] will be called with
+                the plugin's identifier and implementation as arguments and is expected to return
+                a dict of injections mapping inject names to inject objects
+            additional_pre_inits (list): additional pre-initialization hooks to call, will be
+                called with the plugin's identifier and implementation as arguments
+            additional_post_inits (list): additional post-initialization hooks to call, will be
+                called with the plugin's identifier and implementation as arguments
+        """
         for name, plugin in self.enabled_plugins.items():
             self.initialize_implementation_of_plugin(
                 name,
@@ -1901,6 +2067,26 @@ class PluginManager:
         additional_pre_inits=None,
         additional_post_inits=None,
     ):
+        """
+        Initializes the implementation of the given plugin.
+
+        Arguments:
+            name (str): name of the plugin
+            plugin (octoprint.plugin.core.Plugin): plugin to initialize the implementation for
+            additional_injects (dict): additional injects to inject into the implementation, a
+                dict mapping inject names to inject objects
+            additional_inject_factories (list): additional inject factories to use to generate
+                injections into the implementation, each included [callable][] will be called with the plugin's identifier
+                and the implementation as parameters and is expected to return a dict of injections
+                mapping inject names to inject objects
+            additional_pre_inits (list): additional pre-initialization hooks to call, each included [callable][] will be
+                called with the plugin's identifier and implementation as arguments
+            additional_post_inits (list): additional post-initialization hooks to call, each included [callable][] will be
+                called with the plugin's identifier and implementation as arguments
+
+        Returns:
+            (bool): `True` if the plugin's implementation was initialized, `False` otherwise.
+        """
         if plugin.implementation is None:
             return
 
@@ -1924,6 +2110,24 @@ class PluginManager:
         additional_pre_inits=None,
         additional_post_inits=None,
     ):
+        """
+        Initializes the given implementation.
+
+        Arguments:
+            name (str): name of the plugin
+            plugin (octoprint.plugin.core.Plugin): plugin to initialize the implementation for
+            implementation (tuple): implementation to initialize
+            additional_injects (dict): additional injects to inject into the implementation, a dict
+                mapping inject names to inject objects
+            additional_inject_factories (list): additional inject factories to use to generate
+                injections into the implementation, each included [callable][] will be called with the plugin's identifier
+                and the implementation as parameters and is expected to return a dict of injections
+                mapping inject names to inject objects
+            additional_pre_inits (list): additional pre-initialization hooks to call, each included [callable][] will be called with
+                the plugin's identifier and the implementation as parameters
+            additional_post_inits (list): additional post-initialization hooks to call, each included [callable][] will be called with
+                the plugin's identifier and the implementation as parameters
+        """
         if additional_injects is None:
             additional_injects = {}
         if additional_inject_factories is None:
@@ -2014,6 +2218,20 @@ class PluginManager:
         enabled_str=(" ", "!", "#", "*"),
         only_to_handler=None,
     ):
+        """
+        Logs all plugins to the logger.
+
+        Arguments:
+            show_bundled (bool): whether to show if plugins are bundled
+            bundled_str (tuple): strings to use for bundled plugins, first string is used if the plugin is bundled,
+                second string if it is not
+            show_location (bool): whether to show the location of the plugin
+            location_str (str): string to use for the location of the plugin, will be formatted with the location
+            show_enabled (bool): whether to show if plugins are enabled
+            enabled_str (tuple): strings to use for enabled plugins, first string is used if the plugin is enabled,
+                second string if it is not
+            only_to_handler (logging.handler.Handler): if given, only log to the given handler, otherwise log to the logger
+        """
         all_plugins = list(self.enabled_plugins.values()) + list(
             self.disabled_plugins.values()
         )
@@ -2056,16 +2274,16 @@ class PluginManager:
 
     def get_plugin(self, identifier, require_enabled=True):
         """
-        Retrieves the module of the plugin identified by ``identifier``. If the plugin is not registered or disabled and
-        ``required_enabled`` is True (the default) None will be returned.
+        Retrieves the module of the plugin identified by `identifier`. If the plugin is not registered or disabled and
+        `required_enabled` is `True` (the default) `None` will be returned.
 
         Arguments:
             identifier (str): The identifier of the plugin to retrieve.
-            require_enabled (boolean): Whether to only return the plugin if is enabled (True, default) or also if it's
+            require_enabled (bool): Whether to only return the plugin if is enabled (`True`, default) or also if it's
                 disabled.
 
         Returns:
-            module: The requested plugin module or None
+            (module): The requested plugin module or None
         """
 
         plugin_info = self.get_plugin_info(identifier, require_enabled=require_enabled)
@@ -2075,16 +2293,17 @@ class PluginManager:
 
     def get_plugin_info(self, identifier, require_enabled=True):
         """
-        Retrieves the :class:`PluginInfo` instance identified by ``identifier``. If the plugin is not registered or
-        disabled and ``required_enabled`` is True (the default) None will be returned.
+        Retrieves the [octoprint.plugin.core.PluginInfo] instance identified by `identifier`.
+
+        If the plugin is not registered or disabled and `required_enabled` is `True` (the default) `None` will be returned.
 
         Arguments:
             identifier (str): The identifier of the plugin to retrieve.
-            require_enabled (boolean): Whether to only return the plugin if is enabled (True, default) or also if it's
-                disabled.
+            require_enabled (bool): Whether to only return the plugin if is enabled (`True`, default) or also if it's
+                `disabled`.
 
         Returns:
-            ~.PluginInfo: The requested :class:`PluginInfo` or None
+            (octoprint.plugin.core.PluginInfo): The requested `PluginInfo` or `None`
         """
 
         if identifier in self.enabled_plugins:
@@ -2102,7 +2321,7 @@ class PluginManager:
             hook (str): The hook for which to retrieve the handlers.
 
         Returns:
-            dict: A dict containing all registered handlers mapped by their plugin's identifier.
+            (dict): A dict containing all registered handlers mapped by their plugin's identifier.
         """
 
         if hook not in self.plugin_hooks:
@@ -2119,13 +2338,13 @@ class PluginManager:
 
     def get_implementations(self, *types, **kwargs):
         """
-        Get all mixin implementations that implement *all* of the provided ``types``.
+        Get all mixin implementations that implement *all* of the provided `types`.
 
         Arguments:
-            types (one or more type): The types a mixin implementation needs to implement in order to be returned.
+            types (type): The types a mixin implementation needs to implement in order to be returned.
 
         Returns:
-            list: A list of all found implementations
+            (list): A list of all found implementations
         """
 
         sorting_context = kwargs.get("sorting_context", None)
@@ -2184,14 +2403,15 @@ class PluginManager:
 
     def get_filtered_implementations(self, f, *types, **kwargs):
         """
-        Get all mixin implementations that implement *all* of the provided ``types`` and match the provided filter `f`.
+        Get all mixin implementations that implement *all* of the provided `types` and match the provided filter `f`.
 
         Arguments:
-            f (callable): A filter function returning True for implementations to return and False for those to exclude.
-            types (one or more type): The types a mixin implementation needs to implement in order to be returned.
+            f (callable): A filter function returning `True` for implementations to return and `False` for those to exclude. Gets
+                passed each implementation as its only argument.
+            types (type): The types a mixin implementation needs to implement in order to be returned.
 
         Returns:
-            list: A list of all found and matching implementations.
+            (list): A list of all found and matching implementations.
         """
 
         assert callable(f)
@@ -2202,17 +2422,17 @@ class PluginManager:
 
     def get_helpers(self, name, *helpers):
         """
-        Retrieves the named ``helpers`` for the plugin with identifier ``name``.
+        Retrieves the named `helpers` for the plugin with identifier `name`.
 
         If the plugin is not available, returns None. Otherwise returns a :class:`dict` with the requested plugin
         helper names mapped to the method - if a helper could not be resolved, it will be missing from the dict.
 
         Arguments:
-            name (str): Identifier of the plugin for which to look up the ``helpers``.
-            helpers (one or more str): Identifiers of the helpers of plugin ``name`` to return.
+            name (str): Identifier of the plugin for which to look up the `helpers`.
+            helpers (str): Identifiers of the helpers of plugin `name` to return.
 
         Returns:
-            dict: A dictionary of all resolved helpers, mapped by their identifiers, or None if the plugin was not
+            (dict): A dictionary of all resolved helper [callables][callable], mapped by their identifiers, or `None` if the plugin was not
                 registered with the system.
         """
 
@@ -2228,9 +2448,13 @@ class PluginManager:
 
     def register_message_receiver(self, client):
         """
-        Registers a ``client`` for receiving plugin messages. The ``client`` needs to be a callable accepting two
-        input arguments, ``plugin`` (the sending plugin's identifier) and ``data`` (the message itself), and one
-        optional keyword argument, ``permissions`` (an optional list of permissions to test against).
+        Registers a `client` for receiving plugin messages.
+
+        The `client` needs to be a [callable][] accepting two input arguments, `plugin` (the sending plugin's identifier)
+        and `data` (the message itself), and one optional keyword argument, `permissions` (an optional list of permissions to test against).
+
+        Arguments:
+            client (callable): The client to register for receiving plugin messages.
         """
 
         if client is None:
@@ -2239,7 +2463,10 @@ class PluginManager:
 
     def unregister_message_receiver(self, client):
         """
-        Unregisters a ``client`` for receiving plugin messages.
+        Unregisters a `client` for receiving plugin messages.
+
+        Arguments:
+            client (callable): The client to unregister for receiving plugin messages.
         """
 
         try:
@@ -2250,12 +2477,12 @@ class PluginManager:
 
     def send_plugin_message(self, plugin, data, permissions=None):
         """
-        Sends ``data`` in the name of ``plugin`` to all currently registered message receivers by invoking them
+        Sends `data` in the name of `plugin` to all currently registered message receivers by invoking them
         with the three arguments.
 
         Arguments:
             plugin (str): The sending plugin's identifier.
-            data (object): The message.
+            data (dict): The message.
             permissions (list): A list of permissions to test against in the client.
         """
 
@@ -2302,6 +2529,9 @@ def is_sub_path_of(path, parent):
     """
     Tests if `path` is a sub path (or identical) to `path`.
 
+    Examples:
+
+    ```
     >>> is_sub_path_of("/a/b/c", "/a/b")
     True
     >>> is_sub_path_of("/a/b/c", "/a/b2")
@@ -2312,12 +2542,29 @@ def is_sub_path_of(path, parent):
     True
     >>> is_sub_path_of("/a/b", "/a/b")
     True
+    ```
+
+    Arguments:
+        path (str): The path to test.
+        parent (str): The parent path to test against.
     """
     rel_path = os.path.relpath(os.path.realpath(path), os.path.realpath(parent))
     return not (rel_path == os.pardir or rel_path.startswith(os.pardir + os.sep))
 
 
 def is_editable_install(install_dir, package, module, location):
+    """
+    Tests if a package is installed in editable mode.
+
+    Checks if a file `<install_dir>/<package>.egg-link` exists and if it contains a line that points to
+    `<location>/<module>`.
+
+    Arguments:
+        install_dir (str): The directory in which the package is installed.
+        package (str): The name of the package.
+        module (str): The name of the module.
+        location (str): The location of the module.
+    """
     package_link = os.path.join(install_dir, f"{package}.egg-link")
     if os.path.isfile(package_link):
         expected_target = os.path.normcase(os.path.realpath(location))
@@ -2337,6 +2584,13 @@ def is_editable_install(install_dir, package, module, location):
 
 
 class EntryPointMetadata(pkginfo.Distribution):
+    """
+    A wrapper around `pkginfo.Distribution` that extracts metadata from an `EntryPoint` object.
+
+    Arguments:
+        entry_point (pkg_resources.EntryPoint): The entry point to extract metadata from.
+    """
+
     def __init__(self, entry_point):
         self.entry_point = entry_point
         self.extractMetadata()

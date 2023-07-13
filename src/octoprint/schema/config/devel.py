@@ -1,15 +1,8 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
-
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
-
-
-class StylesheetEnum(str, Enum):
-    css = "css"
-    less = "less"
 
 
 @with_attrs_docs
@@ -37,7 +30,7 @@ class DevelCacheConfig(BaseModel):
 
 @with_attrs_docs
 class DevelConfig(BaseModel):
-    stylesheet: StylesheetEnum = StylesheetEnum.css
+    stylesheet: Literal["css", "less"] = "css"
     """Settings for stylesheet preference. OctoPrint will prefer to use the stylesheet type specified here. Usually (on a production install) that will be the compiled css (default). Developers may specify less here too."""
 
     cache: DevelCacheConfig = DevelCacheConfig()

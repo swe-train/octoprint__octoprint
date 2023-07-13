@@ -1,23 +1,10 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
 from typing import List, Optional
 
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
-
-
-class AlwaysDetectNeverEnum(str, Enum):
-    always = "always"
-    detect = "detect"
-    never = "never"
-
-
-class InfoWarnNeverEnum(str, Enum):
-    info = "info"
-    warn = "warn"
-    never = "never"
 
 
 @with_attrs_docs
@@ -172,7 +159,7 @@ class SerialConfig(BaseModel):
     logResends: bool = True
     """Whether to log resends to octoprint.log or not. Invaluable debug tool without performance impact, leave on if possible please."""
 
-    supportResendsWithoutOk: AlwaysDetectNeverEnum = "detect"
+    supportResendsWithoutOk: Literal["always", "detect", "never"] = "detect"
     """Whether to support resends without follow-up ok or not."""
 
     logPositionOnPause: bool = True
@@ -230,13 +217,13 @@ class SerialConfig(BaseModel):
     blockWhileDwelling: bool = False
     """Whether to block all sending to the printer while a G4 (dwell) command is active (true, repetier) or not (false)."""
 
-    useParityWorkaround: AlwaysDetectNeverEnum = "detect"
+    useParityWorkaround: Literal["always", "detect", "never"] = "detect"
     maxConsecutiveResends: int = 10
     sendM112OnError: bool = True
     disableSdPrintingDetection: bool = False
     ackMax: int = 1
     sanityCheckTools: bool = True
-    notifySuppressedCommands: InfoWarnNeverEnum = "warn"
+    notifySuppressedCommands: Literal["info", "warn", "never"] = "warn"
     capabilities: SerialCapabilities = SerialCapabilities()
 
     resendRatioThreshold: int = 10

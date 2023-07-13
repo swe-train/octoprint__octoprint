@@ -1,15 +1,6 @@
 """
 This module represents OctoPrint's plugin subsystem. This includes management and helper methods as well as the
 registered plugin types.
-
-.. autofunction:: plugin_manager
-
-.. autofunction:: plugin_settings
-
-.. autofunction:: call_plugin
-
-.. autoclass:: PluginSettings
-   :members:
 """
 
 __author__ = "Gina Häußge <osd@foosel.net>"
@@ -48,23 +39,23 @@ def plugin_manager(
     compatibility_ignored_list=None,
 ):
     """
-    Factory method for initially constructing and consecutively retrieving the :class:`~octoprint.plugin.core.PluginManager`
+    Factory method for initially constructing and consecutively retrieving the [PluginManager][octoprint.plugin.core.PluginManager]
     singleton.
 
     Arguments:
-        init (boolean): A flag indicating whether this is the initial call to construct the singleton (True) or not
-            (False, default). If this is set to True and the plugin manager has already been initialized, a :class:`ValueError`
+        init (bool): A flag indicating whether this is the initial call to construct the singleton (`True`) or not
+            (`False`, default). If this is set to `True` and the plugin manager has already been initialized, a [ValueError][]
             will be raised. The same will happen if the plugin manager has not yet been initialized and this is set to
             False.
         plugin_folders (list): A list of folders (as strings containing the absolute path to them) in which to look for
-            potential plugin modules. If not provided this defaults to the configured ``plugins`` base folder and
-            ``src/plugins`` within OctoPrint's code base.
+            potential plugin modules. If not provided this defaults to the configured `plugins` base folder and
+            `src/plugins` within OctoPrint's code base.
         plugin_bases (list): A list of recognized plugin base classes for which to look for provided implementations. If not
-            provided this defaults to :class:`~octoprint.plugin.OctoPrintPlugin`.
+            provided this defaults to `octoprint.plugin.types.OctoPrintPlugin`.
         plugin_entry_points (list): A list of entry points pointing to modules which to load as plugins. If not provided
-            this defaults to the entry point ``octoprint.plugin``.
+            this defaults to the entry point `octoprint.plugin`.
         plugin_disabled_list (list): A list of plugin identifiers that are currently disabled. If not provided this
-            defaults to all plugins for which ``enabled`` is set to ``False`` in the settings.
+            defaults to all plugins for which `enabled` is set to `False` in the settings.
         plugin_sorting_order (dict): A dict containing a custom sorting orders for plugins. The keys are plugin identifiers,
             mapped to dictionaries containing the sorting contexts as key and the custom sorting value as value.
         plugin_blacklist (list): A list of plugin identifiers/identifier-requirement tuples
@@ -81,11 +72,11 @@ def plugin_manager(
             incompatible. This is for development purposes only and should not be used in production.
 
     Returns:
-        PluginManager: A fully initialized :class:`~octoprint.plugin.core.PluginManager` instance to be used for plugin
+        (octoprint.plugin.core.PluginManager): A fully initialized `PluginManager` instance to be used for plugin
             management tasks.
 
     Raises:
-        ValueError: ``init`` was True although the plugin manager was already initialized, or it was False although
+        ValueError: `init` was `True` although the plugin manager was already initialized, or it was `False` although
             the plugin manager was not yet initialized.
     """
 
@@ -145,17 +136,17 @@ def plugin_settings(
     settings=None,
 ):
     """
-    Factory method for creating a :class:`PluginSettings` instance.
+    Factory method for creating a `PluginSettings` instance.
 
     Arguments:
-        plugin_key (string): The plugin identifier for which to create the settings instance.
+        plugin_key (str): The plugin identifier for which to create the settings instance.
         defaults (dict): The default settings for the plugin, if different from get_settings_defaults.
         get_preprocessors (dict): The getter preprocessors for the plugin.
         set_preprocessors (dict): The setter preprocessors for the plugin.
         settings (octoprint.settings.Settings): The settings instance to use.
 
     Returns:
-        PluginSettings: A fully initialized :class:`PluginSettings` instance to be used to access the plugin's
+        (octoprint.plugin.PluginSettings): A fully initialized `PluginSettings` instance to be used to access the plugin's
             settings
     """
     if settings is None:
@@ -171,18 +162,18 @@ def plugin_settings(
 
 def plugin_settings_for_settings_plugin(plugin_key, instance, settings=None):
     """
-    Factory method for creating a :class:`PluginSettings` instance for a given :class:`SettingsPlugin` instance.
+    Factory method for creating a `PluginSettings` instance for a given `SettingsPlugin` instance.
 
-    Will return `None` if the provided `instance` is not a :class:`SettingsPlugin` instance.
+    Will return `None` if the provided `instance` is not a [SettingsPlugin][octoprint.plugin.types.SettingsPlugin] instance.
 
     Arguments:
         plugin_key (string): The plugin identifier for which to create the settings instance.
-        implementation (octoprint.plugin.SettingsPlugin): The :class:`SettingsPlugin` instance.
+        instance (octoprint.plugin.types.SettingsPlugin): The `SettingsPlugin` instance.
         settings (octoprint.settings.Settings): The settings instance to use. Defaults to the global OctoPrint settings.
 
     Returns:
-        PluginSettings or None: A fully initialized :class:`PluginSettings` instance to be used to access the plugin's
-            settings, or `None` if the provided `instance` was not a class:`SettingsPlugin`
+        (octoprint.plugin.PluginSettings | None): A fully initialized `PluginSettings` instance to be used to access the plugin's
+            settings, or `None` if the provided `instance` was not a `SettingsPlugin`
     """
     if not isinstance(instance, SettingsPlugin):
         return None
@@ -215,42 +206,42 @@ def call_plugin(
     manager=None,
 ):
     """
-    Helper method to invoke the indicated ``method`` on all registered plugin implementations implementing the
-    indicated ``types``. Allows providing method arguments and registering callbacks to call in case of success
+    Helper method to invoke the indicated `method` on all registered plugin implementations implementing the
+    indicated `types`. Allows providing method arguments and registering callbacks to call in case of success
     and/or failure of each call which can be used to return individual results to the calling code.
 
     Example:
 
-    .. sourcecode:: python
+    ``` python
+    def my_success_callback(name, plugin, result):
+        print("{name} was called successfully and returned {result!r}".format(**locals()))
 
-       def my_success_callback(name, plugin, result):
-           print("{name} was called successfully and returned {result!r}".format(**locals()))
+    def my_error_callback(name, plugin, exc):
+        print("{name} raised an exception: {exc!s}".format(**locals()))
 
-       def my_error_callback(name, plugin, exc):
-           print("{name} raised an exception: {exc!s}".format(**locals()))
-
-       octoprint.plugin.call_plugin(
-           [octoprint.plugin.StartupPlugin],
-           "on_startup",
-           args=(my_host, my_port),
-           callback=my_success_callback,
-           error_callback=my_error_callback
-       )
+    octoprint.plugin.call_plugin(
+        [octoprint.plugin.StartupPlugin],
+        "on_startup",
+        args=(my_host, my_port),
+        callback=my_success_callback,
+        error_callback=my_error_callback
+    )
+    ```
 
     Arguments:
         types (list): A list of plugin implementation types to match against.
-        method (string): Name of the method to call on all matching implementations.
-        args (tuple): A tuple containing the arguments to supply to the called ``method``. Optional.
-        kwargs (dict): A dictionary containing the keyword arguments to supply to the called ``method``. Optional.
-        callback (function): A callback to invoke after an implementation has been called successfully. Will be called
-            with the three arguments ``name``, ``plugin`` and ``result``. ``name`` will be the plugin identifier,
-            ``plugin`` the plugin implementation instance itself and ``result`` the result returned from the
-            ``method`` invocation.
-        error_callback (function): A callback to invoke after the call of an implementation resulted in an exception.
-            Will be called with the three arguments ``name``, ``plugin`` and ``exc``. ``name`` will be the plugin
-            identifier, ``plugin`` the plugin implementation instance itself and ``exc`` the caught exception.
-        initialized (boolean): Ignored.
-        manager (PluginManager or None): The plugin manager to use. If not provided, the global plugin manager
+        method (str): Name of the method to call on all matching implementations.
+        args (tuple): A tuple containing the arguments to supply to the called `method`. Optional.
+        kwargs (dict): A dictionary containing the keyword arguments to supply to the called `method`. Optional.
+        callback (callable): A callback to invoke after an implementation has been called successfully. Will be called
+            with the three arguments `name`, `plugin` and `result`. `name` will be the plugin identifier,
+            `plugin` the plugin implementation instance itself and `result` the result returned from the
+            `method` invocation.
+        error_callback (callable): A callback to invoke after the call of an implementation resulted in an exception.
+            Will be called with the three arguments `name`, `plugin` and `exc`. `name` will be the plugin
+            identifier, `plugin` the plugin implementation instance itself and `exc` the caught exception.
+        initialized (bool): Ignored.
+        manager (octoprint.plugin.core.PluginManager | None): The plugin manager to use. If not provided, the global plugin manager
     """
 
     if not isinstance(types, (list, tuple)):
@@ -286,107 +277,22 @@ def call_plugin(
 
 class PluginSettings:
     """
-    The :class:`PluginSettings` class is the interface for plugins to their own or globally defined settings.
+    The `PluginSettings` class is the interface for plugins to their own or globally defined settings.
 
     It provides some convenience methods for directly accessing plugin settings via the regular
-    :class:`octoprint.settings.Settings` interfaces as well as means to access plugin specific folder locations.
+    [Settings][octoprint.settings.Settings] interfaces as well as means to access plugin specific folder locations.
 
     All getter and setter methods will ensure that plugin settings are stored in their correct location within the
     settings structure by modifying the supplied paths accordingly.
 
     Arguments:
-        settings (Settings): The :class:`~octoprint.settings.Settings` instance on which to operate.
+        settings (octoprint.settings.Settings): The `Settings` instance on which to operate.
         plugin_key (str): The plugin identifier of the plugin for which to create this instance.
-        defaults (dict): The plugin's defaults settings, will be used to determine valid paths within the plugin's
-            settings structure
-
-    .. method:: get(path, merged=False, asdict=False)
-
-       Retrieves a raw value from the settings for ``path``, optionally merging the raw value with the default settings
-       if ``merged`` is set to True.
-
-       :param path: The path for which to retrieve the value.
-       :type path: list, tuple
-       :param boolean merged: Whether to merge the returned result with the default settings (True) or not (False,
-           default).
-       :returns: The retrieved settings value.
-       :rtype: object
-
-    .. method:: get_int(path, min=None, max=None)
-
-       Like :func:`get` but tries to convert the retrieved value to ``int``. If ``min`` is provided and the retrieved
-       value is less than it, it will be returned instead of the value. Likewise for ``max`` - it will be returned if
-       the value is greater than it.
-
-    .. method:: get_float(path, min=None, max=None)
-
-       Like :func:`get` but tries to convert the retrieved value to ``float``. If ``min`` is provided and the retrieved
-       value is less than it, it will be returned instead of the value. Likewise for ``max`` - it will be returned if
-       the value is greater than it.
-
-    .. method:: get_boolean(path)
-
-       Like :func:`get` but tries to convert the retrieved value to ``boolean``.
-
-    .. method:: set(path, value, force=False)
-
-       Sets the raw value on the settings for ``path``.
-
-       :param path: The path for which to retrieve the value.
-       :type path: list, tuple
-       :param object value: The value to set.
-       :param boolean force: If set to True, the modified configuration will even be written back to disk if
-           the value didn't change.
-
-    .. method:: set_int(path, value, force=False, min=None, max=None)
-
-       Like :func:`set` but ensures the value is an ``int`` through attempted conversion before setting it.
-       If ``min`` and/or ``max`` are provided, it will also be ensured that the value is greater than or equal
-       to ``min`` and less than or equal to ``max``. If that is not the case, the limit value (``min`` if less than
-       that, ``max`` if greater than that) will be set instead.
-
-    .. method:: set_float(path, value, force=False, min=None, max=None)
-
-       Like :func:`set` but ensures the value is an ``float`` through attempted conversion before setting it.
-       If ``min`` and/or ``max`` are provided, it will also be ensured that the value is greater than or equal
-       to ``min`` and less than or equal to ``max``. If that is not the case, the limit value (``min`` if less than
-       that, ``max`` if greater than that) will be set instead.
-
-    .. method:: set_boolean(path, value, force=False)
-
-       Like :func:`set` but ensures the value is an ``boolean`` through attempted conversion before setting it.
-
-    .. method:: save(force=False, trigger_event=False)
-
-       Saves the settings to ``config.yaml`` if there are active changes. If ``force`` is set to ``True`` the settings
-       will be saved even if there are no changes. Settings ``trigger_event`` to ``True`` will cause a ``SettingsUpdated``
-       :ref:`event <sec-events-available_events-settings>` to get triggered.
-
-       :param force: Force saving to ``config.yaml`` even if there are no changes.
-       :type force: boolean
-       :param trigger_event: Trigger the ``SettingsUpdated`` :ref:`event <sec-events-available_events-settings>` on save.
-       :type trigger_event: boolean
-
-    .. method:: add_overlay(overlay, at_end=False, key=None)
-
-       Adds a new config overlay for the plugin's settings. Will return the overlay's key in the map.
-
-       :param overlay: Overlay dict to add
-       :type overlay: dict
-       :param at_end: Whether to add overlay at end or start (default) of config hierarchy
-       :type at_end: boolean
-       :param key: Key to use to identify overlay. If not set one will be built based on the overlay's hash
-       :type key: str
-       :rtype: str
-
-    .. method:: remove_overlay(key)
-
-       Removes an overlay from the settings based on its key. Return ``True`` if the overlay could be found and was
-       removed, ``False`` otherwise.
-
-       :param key: The key of the overlay to remove
-       :type key: str
-       :rtype: boolean
+        defaults (dict): The plugin's defaults settings.
+        get_preprocessors (dict): The plugin's get preprocessors. A dict of settings paths to callables that will
+            be called with the value of the setting and should return the processed value.
+        set_preprocessors (dict): The plugin's set preprocessors. A dict of settings paths to callables that will
+            be called with the value of the setting and should return the processed value.
     """
 
     def __init__(
@@ -398,169 +304,345 @@ class PluginSettings:
         set_preprocessors=None,
     ):
         self.settings = settings
+        """ The `Settings` instance on which to operate. """
+
         self.plugin_key = plugin_key
+        """ The plugin identifier of the plugin for which this instance was created. """
+
+        self.defaults = None
+        """ The plugin's defaults settings, prefixed with the plugin's settings path. """
 
         if defaults is not None:
             self.defaults = {"plugins": {}}
             self.defaults["plugins"][plugin_key] = defaults
             self.defaults["plugins"][plugin_key]["_config_version"] = None
-        else:
-            self.defaults = None
+
+        self.get_preprocessors = {"plugins": {}}
+        """ The plugin's get preprocessors, prefixed with the plugin's settings path. """
 
         if get_preprocessors is None:
             get_preprocessors = {}
-        self.get_preprocessors = {"plugins": {}}
         self.get_preprocessors["plugins"][plugin_key] = get_preprocessors
+
+        self.set_preprocessors = {"plugins": {}}
+        """ The plugin's set preprocessors, prefixed with the plugin's settings path. """
 
         if set_preprocessors is None:
             set_preprocessors = {}
-        self.set_preprocessors = {"plugins": {}}
         self.set_preprocessors["plugins"][plugin_key] = set_preprocessors
-
-        def prefix_path_in_args(args, index=0):
-            result = []
-            if index == 0:
-                result.append(self._prefix_path(args[0]))
-                result.extend(args[1:])
-            else:
-                args_before = args[: index - 1]
-                args_after = args[index + 1 :]
-                result.extend(args_before)
-                result.append(self._prefix_path(args[index]))
-                result.extend(args_after)
-            return result
-
-        def add_getter_kwargs(kwargs):
-            if "defaults" not in kwargs and self.defaults is not None:
-                kwargs.update(defaults=self.defaults)
-            if "preprocessors" not in kwargs:
-                kwargs.update(preprocessors=self.get_preprocessors)
-            return kwargs
-
-        def add_setter_kwargs(kwargs):
-            if "defaults" not in kwargs and self.defaults is not None:
-                kwargs.update(defaults=self.defaults)
-            if "preprocessors" not in kwargs:
-                kwargs.update(preprocessors=self.set_preprocessors)
-            return kwargs
-
-        def wrap_overlay(args):
-            result = list(args)
-            overlay = result[0]
-            result[0] = {"plugins": {plugin_key: overlay}}
-            return result
-
-        self.access_methods = {
-            "has": ("has", prefix_path_in_args, add_getter_kwargs),
-            "get": ("get", prefix_path_in_args, add_getter_kwargs),
-            "get_int": ("getInt", prefix_path_in_args, add_getter_kwargs),
-            "get_float": ("getFloat", prefix_path_in_args, add_getter_kwargs),
-            "get_boolean": ("getBoolean", prefix_path_in_args, add_getter_kwargs),
-            "set": ("set", prefix_path_in_args, add_setter_kwargs),
-            "set_int": ("setInt", prefix_path_in_args, add_setter_kwargs),
-            "set_float": ("setFloat", prefix_path_in_args, add_setter_kwargs),
-            "set_boolean": ("setBoolean", prefix_path_in_args, add_setter_kwargs),
-            "remove": ("remove", prefix_path_in_args, lambda x: x),
-            "add_overlay": ("add_overlay", wrap_overlay, lambda x: x),
-            "remove_overlay": ("remove_overlay", lambda x: x, lambda x: x),
-        }
-        self.deprecated_access_methods = {
-            "getInt": "get_int",
-            "getFloat": "get_float",
-            "getBoolean": "get_boolean",
-            "setInt": "set_int",
-            "setFloat": "set_float",
-            "setBoolean": "set_boolean",
-        }
 
     def _prefix_path(self, path=None):
         if path is None:
             path = list()
         return ["plugins", self.plugin_key] + path
 
+    def _add_getter_kwargs(self, kwargs):
+        if "defaults" not in kwargs and self.defaults is not None:
+            kwargs.update(defaults=self.defaults)
+        if "preprocessors" not in kwargs:
+            kwargs.update(preprocessors=self.get_preprocessors)
+        return kwargs
+
+    def _add_setter_kwargs(self, kwargs):
+        if "defaults" not in kwargs and self.defaults is not None:
+            kwargs.update(defaults=self.defaults)
+        if "preprocessors" not in kwargs:
+            kwargs.update(preprocessors=self.set_preprocessors)
+        return kwargs
+
+    def _wrap_overlay(self, args):
+        result = list(args)
+        overlay = result[0]
+        result[0] = {"plugins": {self.plugin_key: overlay}}
+        return result
+
+    def has(self, path, **kwargs):
+        """
+        Checks whether a value for `path` is present in the settings.
+
+        Arguments:
+            path (list, tuple): The path for which to check the value.
+
+        Returns:
+            (bool): Whether a value for `path` is present in the settings.
+        """
+        return self.settings.has(
+            self._prefix_path(path), **self._add_getter_kwargs(kwargs)
+        )
+
+    def get(self, path, **kwargs):
+        """
+        Retrieves a raw value from the settings for `path`, optionally merging the raw value with the default settings
+        if `merged` is set to True.
+
+        Arguments:
+            path (list, tuple): The path for which to retrieve the value.
+            merged (bool): Whether to merge the returned result with the default settings (True) or not (False,
+                default).
+            asdict (bool): Whether to return the result as a dictionary (True) or not (False, default).
+
+        Returns:
+            (object): The retrieved settings value.
+        """
+        return self.settings.get(
+            self._prefix_path(path), **self._add_getter_kwargs(kwargs)
+        )
+
+    def get_int(self, path, **kwargs):
+        """
+        Like `get` but tries to convert the retrieved value to [int][]. If `min` is provided and the retrieved
+        value is less than it, it will be returned instead of the value. Likewise for `max` - it will be returned if
+        the value is greater than it.
+
+        Arguments:
+            path (list, tuple): The path for which to retrieve the value.
+            min (int): The minimum value to return.
+            max (int): The maximum value to return.
+
+        Returns:
+            (int | None): The retrieved settings value, converted to an integer, if possible, `None` otherwise
+        """
+        return self.settings.getInt(
+            self._prefix_path(path), **self._add_getter_kwargs(kwargs)
+        )
+
+    def get_float(self, path, **kwargs):
+        """
+        Like `get` but tries to convert the retrieved value to [float][]. If `min` is provided and the retrieved
+        value is less than it, it will be returned instead of the value. Likewise for `max` - it will be returned if
+        the value is greater than it.
+
+        Arguments:
+            path (list, tuple): The path for which to retrieve the value.
+            min (float): The minimum value to return.
+            max (float): The maximum value to return.
+
+        Returns:
+            (float | None): The retrieved settings value, converted to a float, if possible, `None` otherwise
+        """
+        return self.settings.getFloat(
+            self._prefix_path(path), **self._add_getter_kwargs(kwargs)
+        )
+
+    def get_boolean(self, path, **kwargs):
+        """
+        Like `get` but tries to convert the retrieved value to [bool][].
+
+        Arguments:
+            path (list, tuple): The path for which to retrieve the value.
+
+        Returns:
+            (bool | None): The retrieved settings value, converted to a boolean, if possible, `None` otherwise
+        """
+        return self.settings.getBoolean(
+            self._prefix_path(path), **self._add_getter_kwargs(kwargs)
+        )
+
+    def set(self, path, value, **kwargs):
+        """
+        Sets the raw value on the settings for `path`.
+
+        Arguments:
+            path (list, tuple): The path for which to set the value.
+            value (object): The value to set.
+            force (bool): If set to True, the modified configuration will be written back to disk even if
+                the value didn't change.
+        """
+        return self.settings.set(
+            self._prefix_path(path), value, **self._add_setter_kwargs(kwargs)
+        )
+
+    def set_int(self, path, value, **kwargs):
+        """
+        Like `set` but ensures the value is an [int][] through attempted conversion before setting it.
+
+        If `min` and/or `max` are provided, it will also be ensured that the value is greater than or equal
+        to `min` and less than or equal to `max`. If that is not the case, the limit value (`min` if less than
+        that, `max` if greater than that) will be set instead.
+
+        Arguments:
+            path (list, tuple): The path for which to set the value.
+            value (object): The value to set.
+            min (int): The minimum value to set.
+            max (int): The maximum value to set.
+        """
+        return self.settings.setInt(
+            self._prefix_path(path), value, **self._add_setter_kwargs(kwargs)
+        )
+
+    def set_float(self, path, value, **kwargs):
+        """
+        Like `set` but ensures the value is an [float][] through attempted conversion before setting it.
+
+        If `min` and/or `max` are provided, it will also be ensured that the value is greater than or equal
+        to `min` and less than or equal to `max`. If that is not the case, the limit value (`min` if less than
+        that, `max` if greater than that) will be set instead.
+
+        Arguments:
+            path (list, tuple): The path for which to set the value.
+            value (object): The value to set.
+            min (float): The minimum value to set.
+            max (float): The maximum value to set.
+        """
+        return self.settings.setFloat(
+            self._prefix_path(path), value, **self._add_setter_kwargs(kwargs)
+        )
+
+    def set_boolean(self, path, value, **kwargs):
+        """
+        Like `set` but ensures the value is an [bool][] through attempted conversion before setting it.
+
+        Arguments:
+            path (list, tuple): The path for which to set the value.
+            value (object): The value to set.
+        """
+        return self.settings.setBoolean(
+            self._prefix_path(path), value, **self._add_setter_kwargs(kwargs)
+        )
+
+    def remove(self, path, **kwargs):
+        """
+        Removes the value for `path` from the settings.
+
+        Arguments:
+            path (list, tuple): The path for which to remove the value.
+        """
+        return self.settings.remove(self._prefix_path(path), **kwargs)
+
+    def add_overlay(self, overlay, **kwargs):
+        """
+        Adds an overlay for th plugin to the settings.
+
+        Arguments:
+            overlay (dict): The overlay to add.
+
+        Returns:
+            (str): The key under which the overlay was added.
+        """
+        return self.settings.add_overlay(self._wrap_overlay(overlay), **kwargs)
+
+    def remove_overlay(self, key):
+        """
+        Removes an overlay from the settings by `key`.
+
+        Arguments:
+            key (str): The key of the overlay to remove.
+        """
+        return self.settings.remove_overlay(key)
+
     def global_has(self, path, **kwargs):
+        """
+        Checks whether the global settings structure has a value for `path`.
+
+        Directly forwards to [octoprint.settings.Settings.has][].
+        """
         return self.settings.has(path, **kwargs)
 
     def global_remove(self, path, **kwargs):
+        """
+        Removes the value for `path` from the global settings structure.
+
+        Directly forwards to [octoprint.settings.Settings.remove][].
+        """
         return self.settings.remove(path, **kwargs)
 
     def global_get(self, path, **kwargs):
         """
-        Getter for retrieving settings not managed by the plugin itself from the core settings structure. Use this
-        to access global settings outside of your plugin.
+        Gets a value from the global settings structure.
 
-        Directly forwards to :func:`octoprint.settings.Settings.get`.
+        Directly forwards to [octoprint.settings.Settings.get][]. See its documentation for possible
+        parameters.
         """
         return self.settings.get(path, **kwargs)
 
     def global_get_int(self, path, **kwargs):
         """
-        Like :func:`global_get` but directly forwards to :func:`octoprint.settings.Settings.getInt`.
+        Gets a value from the global settings structure and tries to convert it to [int][].
+
+        Directly forwards to [octoprint.settings.Settings.getInt][]. See its documentation for possible
+        parameters.
         """
         return self.settings.getInt(path, **kwargs)
 
     def global_get_float(self, path, **kwargs):
         """
-        Like :func:`global_get` but directly forwards to :func:`octoprint.settings.Settings.getFloat`.
+        Gets a value from the global settings structure and tries to convert it to [float][].
+
+        Directly forwards to [octoprint.settings.Settings.getFloat][]. See its documentation for possible
+        parameters.
         """
         return self.settings.getFloat(path, **kwargs)
 
     def global_get_boolean(self, path, **kwargs):
         """
-        Like :func:`global_get` but directly orwards to :func:`octoprint.settings.Settings.getBoolean`.
+        Gets a value from the global settings structure and tries to convert it to [bool][].
+
+        Directly forwards to [octoprint.settings.Settings.getBoolean][]. See its documentation for possible
+        parameters.
         """
         return self.settings.getBoolean(path, **kwargs)
 
     def global_set(self, path, value, **kwargs):
         """
-        Setter for modifying settings not managed by the plugin itself on the core settings structure. Use this
-        to modify global settings outside of your plugin.
+        Sets a value in the global settings structure.
 
-        Directly forwards to :func:`octoprint.settings.Settings.set`.
+        Directly forwards to [octoprint.settings.Settings.set][]. See its documentation for possible
+        parameters.
         """
         self.settings.set(path, value, **kwargs)
 
     def global_set_int(self, path, value, **kwargs):
         """
-        Like :func:`global_set` but directly forwards to :func:`octoprint.settings.Settings.setInt`.
+        Sets a value in the global settings structure and tries to convert it to [int][].
+
+        Directly forwards to [octoprint.settings.Settings.setInt][]. See its documentation for possible
+        parameters.
         """
         self.settings.setInt(path, value, **kwargs)
 
     def global_set_float(self, path, value, **kwargs):
         """
-        Like :func:`global_set` but directly forwards to :func:`octoprint.settings.Settings.setFloat`.
+        Sets a value in the global settings structure and tries to convert it to [float][].
+
+        Directly forwards to [octoprint.settings.Settings.setFloat][]. See its documentation for possible
+        parameters.
         """
         self.settings.setFloat(path, value, **kwargs)
 
     def global_set_boolean(self, path, value, **kwargs):
         """
-        Like :func:`global_set` but directly forwards to :func:`octoprint.settings.Settings.setBoolean`.
+        Sets a value in the global settings structure and tries to convert it to [bool][].
+
+        Directly forwards to [octoprint.settings.Settings.setBoolean][]. See its documentation for possible
+        parameters.
         """
         self.settings.setBoolean(path, value, **kwargs)
 
     def global_get_basefolder(self, folder_type, **kwargs):
         """
-        Retrieves a globally defined basefolder of the given ``folder_type``. Directly forwards to
-        :func:`octoprint.settings.Settings.getBaseFolder`.
+        Retrieves a globally defined basefolder of the given `folder_type`.
+
+        Directly forwards to [octoprint.settings.Settings.getBaseFolder][].
         """
         return self.settings.getBaseFolder(folder_type, **kwargs)
 
     def get_plugin_logfile_path(self, postfix=None):
         """
-        Retrieves the path to a logfile specifically for the plugin. If ``postfix`` is not supplied, the logfile
-        will be named ``plugin_<plugin identifier>.log`` and located within the configured ``logs`` folder. If a
-        postfix is supplied, the name will be ``plugin_<plugin identifier>_<postfix>.log`` at the same location.
+        Retrieves the path to a logfile specifically for the plugin.
 
-        Plugins may use this for specific logging tasks. For example, a :class:`~octoprint.plugin.SlicingPlugin` might
+        If `postfix` is not supplied, the logfile will be named `plugin_<plugin identifier>.log` and located within the
+        configured `logs` folder. If a postfix is supplied, the name will be `plugin_<plugin identifier>_<postfix>.log`
+        at the same location.
+
+        Plugins may use this for specific logging tasks. For example, a [octoprint.plugin.types.SlicerPlugin][] might
         want to create a log file for logging the output of the slicing engine itself if some debug flag is set.
 
         Arguments:
             postfix (str): Postfix of the logfile for which to create the path. If set, the file name of the log file
-                will be ``plugin_<plugin identifier>_<postfix>.log``, if not it will be
-                ``plugin_<plugin identifier>.log``.
+                will be `plugin_<plugin identifier>_<postfix>.log`, if not it will be `plugin_<plugin identifier>.log`.
 
         Returns:
-            str: Absolute path to the log file, directly usable by the plugin.
+            (str): Absolute path to the log file, directly usable by the plugin.
         """
         filename = "plugin_" + self.plugin_key
         if postfix is not None:
@@ -579,7 +661,58 @@ class PluginSettings:
             os.makedirs(path)
         return path
 
+    @deprecated(
+        "getInt has been renamed to get_int",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.get_int][]",
+    )
+    def getInt(self, *args, **kwargs):
+        return self.get_int(*args, **kwargs)
+
+    @deprecated(
+        "getFloat has been renamed to get_float",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.get_float][]",
+    )
+    def getFloat(self, *args, **kwargs):
+        return self.get_float(*args, **kwargs)
+
+    @deprecated(
+        "getBoolean has been renamed to get_boolean",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.get_boolean][]",
+    )
+    def getBoolean(self, *args, **kwargs):
+        return self.get_boolean(*args, **kwargs)
+
+    @deprecated(
+        "setInt has been renamed to set_int",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.set_int][]",
+    )
+    def setInt(self, *args, **kwargs):
+        return self.set_int(*args, **kwargs)
+
+    @deprecated(
+        "setFloat has been renamed to set_float",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.set_float][]",
+    )
+    def setFloat(self, *args, **kwargs):
+        return self.set_float(*args, **kwargs)
+
+    @deprecated(
+        "setBoolean has been renamed to set_boolean",
+        includedoc="Replaced by [octoprint.plugin.types.OctoPrintPlugin.set_boolean][]",
+    )
+    def setBoolean(self, *args, **kwargs):
+        return self.set_boolean(*args, **kwargs)
+
     def get_all_data(self, **kwargs):
+        """
+        Returns all data stored for this plugin.
+
+        Arguments:
+            merged (bool): Whether to merge the data with the defaults. Defaults to `True`.
+            asdict (bool): Whether to return the data as a dict. Defaults to `True`.
+            defaults (bool): Which defaults to use. Defaults to the plugin defaults.
+            preprocessors (list): List of preprocessors to apply to the data. Defaults to the plugin preprocessors.
+        """
         merged = kwargs.get("merged", True)
         asdict = kwargs.get("asdict", True)
         defaults = kwargs.get("defaults", self.defaults)
@@ -597,36 +730,7 @@ class PluginSettings:
         return self.settings.get(self._prefix_path(), **kwargs)
 
     def clean_all_data(self):
+        """
+        Removes all data stored for this plugin.
+        """
         self.settings.remove(self._prefix_path())
-
-    def __getattr__(self, item):
-        all_access_methods = list(self.access_methods.keys()) + list(
-            self.deprecated_access_methods.keys()
-        )
-        if item in all_access_methods:
-            decorator = None
-            if item in self.deprecated_access_methods:
-                new = self.deprecated_access_methods[item]
-                decorator = deprecated(
-                    f"{item} has been renamed to {new}",
-                    stacklevel=2,
-                )
-                item = new
-
-            settings_name, args_mapper, kwargs_mapper = self.access_methods[item]
-            if hasattr(self.settings, settings_name) and callable(
-                getattr(self.settings, settings_name)
-            ):
-                orig_func = getattr(self.settings, settings_name)
-                if decorator is not None:
-                    orig_func = decorator(orig_func)
-
-                def _func(*args, **kwargs):
-                    return orig_func(*args_mapper(args), **kwargs_mapper(kwargs))
-
-                _func.__name__ = item
-                _func.__doc__ = orig_func.__doc__ if "__doc__" in dir(orig_func) else None
-
-                return _func
-
-        return getattr(self.settings, item)

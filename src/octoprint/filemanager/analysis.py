@@ -48,18 +48,18 @@ class QueueEntry(
     )
 ):
     """
-    A :class:`QueueEntry` for processing through the :class:`AnalysisQueue`. Wraps the entry's properties necessary
+    A `QueueEntry` for processing through the [AnalysisQueue][octoprint.filemanager.analysis.AnalysisQueue]. Wraps the entry's properties necessary
     for processing.
 
     Arguments:
         name (str): Name of the file to analyze.
         path (str): Storage location specific path to the file to analyze.
-        type (str): Type of file to analyze, necessary to map to the correct :class:`AbstractAnalysisQueue` sub class.
-            At the moment, only ``gcode`` is supported here.
+        type (str): Type of file to analyze, necessary to map to the correct [AbstractAnalysisQueue][octoprint.filemanager.analysis.AbstractAnalysisQueue] sub class.
+            At the moment, only `gcode` is supported here.
         location (str): Location the file is located on.
         absolute_path (str): Absolute path on disk through which to access the file.
-        printer_profile (PrinterProfile): :class:`PrinterProfile` which to use for analysis.
-        analysis (dict): :class:`GcodeAnalysisQueue` results from prior analysis, or ``None`` if there is none.
+        printer_profile (octoprint.printer.profile.PrinterProfile): [PrinterProfile][octoprint.printer.profile.PrinterProfile] which to use for analysis.
+        analysis (dict): [GcodeAnalysisQueue][octoprint.filemanager.analysis.GcodeAnalysisQueue] results from prior analysis, or `None` if there is none.
     """
 
     def __str__(self):
@@ -74,17 +74,21 @@ class AnalysisAborted(Exception):
 
 class AnalysisQueue:
     """
-    OctoPrint's :class:`AnalysisQueue` can manage various :class:`AbstractAnalysisQueue` implementations, mapped
-    by their machine code type.
+    OctoPrint's `AnalysisQueue` can manage various [AbstractAnalysisQueue][octoprint.filemanager.analysis.AbstractAnalysisQueue]
+    implementations, mapped by their machine code type.
 
-    By invoking :meth:`register_finish_callback` it is possible to register oneself as a callback to be invoked each
-    time the analysis of a queue entry finishes. The call parameters will be the finished queue entry as the first
-    and the analysis result as the second parameter. It is also possible to remove the registration again by invoking
-    :meth:`unregister_finish_callback`.
+    By invoking [register_finish_callback][octoprint.filemanager.analysis.AnalysisQueue.register_finish_callback]
+    it is possible to register oneself as a callback to be invoked each time the analysis
+    of a queue entry finishes. The call parameters will be the finished queue entry as
+    the first and the analysis result as the second parameter. It is also possible to
+    remove the registration again by invoking [unregister_finish_callback][octoprint.filemanager.analysis.AnalysisQueue.unregister_finish_callback].
 
-    :meth:`enqueue` allows enqueuing :class:`QueueEntry` instances to analyze. If the :attr:`QueueEntry.type` is unknown
-    (no specific child class of :class:`AbstractAnalysisQueue` is registered for it), nothing will happen. Otherwise the
-    entry will be enqueued with the type specific analysis queue.
+    [enqueue][octoprint.filemanager.analysis.AnalysisQueue.enqueue] allows enqueuing
+    [QueueEntry][octoprint.filemanager.analysis.QueueEntry] instances to analyze. If the
+    [QueueEntry.type][octoprint.filemanager.analysis.QueueEntry.type] is unknown (no
+    specific child class of [AbstractAnalysisQueue][octoprint.filemanager.analysis.AbstractAnalysisQueue]
+    is registered for it), nothing will happen. Otherwise the entry will be enqueued
+    with the type specific analysis queue.
     """
 
     def __init__(self, queue_factories):
@@ -154,18 +158,10 @@ class AnalysisQueue:
 
 class AbstractAnalysisQueue:
     """
-    The :class:`AbstractAnalysisQueue` is the parent class of all specific analysis queues such as the
-    :class:`GcodeAnalysisQueue`. It offers methods to enqueue new entries to analyze and pausing and resuming analysis
+    The `AbstractAnalysisQueue` is the parent class of all specific analysis queues such
+    as the [GcodeAnalysisQueue][octoprint.filemanager.analysis.GcodeAnalysisQueue]. It
+    offers methods to enqueue new entries to analyze and pausing and resuming analysis
     processing.
-
-    Arguments:
-        finished_callback (callable): Callback that will be called upon finishing analysis of an entry in the queue.
-            The callback will be called with the analyzed entry as the first argument and the analysis result as
-            returned from the queue implementation as the second parameter.
-
-    .. automethod:: _do_analysis
-
-    .. automethod:: _do_abort
     """
 
     LOW_PRIO = 100
@@ -174,6 +170,16 @@ class AbstractAnalysisQueue:
     HIGH_PRIO_ABORTED = 0
 
     def __init__(self, finished_callback):
+        """
+        Initializes the queue.
+
+        Arguments:
+            finished_callback (callable): Callback that will be called upon finishing
+                analysis of an entry in the queue. The callback will be called with the
+                analyzed entry as the first argument and the analysis result as returned
+                from the queue implementation as the second parameter.
+
+        """
         self._logger = logging.getLogger(__name__)
 
         self._finished_callback = finished_callback
@@ -197,15 +203,15 @@ class AbstractAnalysisQueue:
 
     def enqueue(self, entry, high_priority=False):
         """
-        Enqueues an ``entry`` for analysis by the queue.
+        Enqueues an `entry` for analysis by the queue.
 
-        If ``high_priority`` is True (defaults to False), the entry will be prioritized and hence processed before
+        If `high_priority` is `True` (defaults to `False`), the entry will be prioritized and hence processed before
         other entries in the queue with normal priority.
 
         Arguments:
-            entry (QueueEntry): The :class:`QueueEntry` to analyze.
-            high_priority (boolean): Whether to process the provided entry with high priority (True) or not
-                (False, default)
+            entry (QueueEntry): The entry to analyze.
+            high_priority (bool): Whether to process the provided entry with high priority (`True`) or not
+              (`False`, default)
         """
 
         if settings().get(["gcodeAnalysis", "runAt"]) == "never":
@@ -340,14 +346,14 @@ class AbstractAnalysisQueue:
 
     def _do_analysis(self, high_priority=False):
         """
-        Performs the actual analysis of the current entry which can be accessed via ``self._current``. Needs to be
+        Performs the actual analysis of the current entry which can be accessed via `self._current`. Needs to be
         overridden by sub classes.
 
         Arguments:
             high_priority (bool): Whether the current entry has high priority or not.
 
         Returns:
-            object: The result of the analysis which will be forwarded to the ``finished_callback`` provided during
+            object: The result of the analysis which will be forwarded to the `finished_callback` provided during
                 construction.
         """
         return None
@@ -361,66 +367,36 @@ class AbstractAnalysisQueue:
 
 class GcodeAnalysisQueue(AbstractAnalysisQueue):
     """
-    A queue to analyze GCODE files. Analysis results are :class:`dict` instances structured as follows:
+    A queue to analyze GCODE files. Analysis results are [dict][] instances structured as follows:
 
-    .. list-table::
-       :widths: 25 70
-
-       - * **Key**
-         * **Description**
-       - * ``estimatedPrintTime``
-         * Estimated time the file take to print, in seconds
-       - * ``filament``
-         * Substructure describing estimated filament usage. Keys are ``tool0`` for the first extruder, ``tool1`` for
-           the second and so on. For each tool extruded length and volume (based on diameter) are provided.
-       - * ``filament.toolX.length``
-         * The extruded length in mm
-       - * ``filament.toolX.volume``
-         * The extruded volume in cm³
-       - * ``printingArea``
-         * Bounding box of the printed object in the print volume (minimum and maximum coordinates)
-       - * ``printingArea.minX``
-         * Minimum X coordinate of the printed object
-       - * ``printingArea.maxX``
-         * Maximum X coordinate of the printed object
-       - * ``printingArea.minY``
-         * Minimum Y coordinate of the printed object
-       - * ``printingArea.maxY``
-         * Maximum Y coordinate of the printed object
-       - * ``printingArea.minZ``
-         * Minimum Z coordinate of the printed object
-       - * ``printingArea.maxZ``
-         * Maximum Z coordinate of the printed object
-       - * ``dimensions``
-         * Dimensions of the printed object in X, Y, Z
-       - * ``dimensions.width``
-         * Width of the printed model along the X axis, in mm
-       - * ``dimensions.depth``
-         * Depth of the printed model along the Y axis, in mm
-       - * ``dimensions.height``
-         * Height of the printed model along the Z axis, in mm
-       - * ``travelArea``
-         * Bounding box of all machine movements (minimum and maximum coordinates)
-       - * ``travelArea.minX``
-         * Minimum X coordinate of the machine movement
-       - * ``travelArea.maxX``
-         * Maximum X coordinate of the machine movement
-       - * ``travelArea.minY``
-         * Minimum Y coordinate of the machine movement
-       - * ``travelArea.maxY``
-         * Maximum Y coordinate of the machine movement
-       - * ``travelArea.minZ``
-         * Minimum Z coordinate of the machine movement
-       - * ``travelArea.maxZ``
-         * Maximum Z coordinate of the machine movement
-       - * ``travelDimensions``
-         * Dimensions of the travel area in X, Y, Z
-       - * ``travelDimensions.width``
-         * Width of the travel area along the X axis, in mm
-       - * ``travelDimensions.depth``
-         * Depth of the travel area along the Y axis, in mm
-       - * ``travelDimensions.height``
-         * Height of the travel area along the Z axis, in mm
+    | Name | Type | Description |
+    | ---- | ---- | ----------- |
+    | `estimatedPrintTime` | `int` | Estimated time the file take to print, in seconds |
+    | `filament.*` | `dict` | Substructure describing estimated filament usage. Keys are `tool0` for the first extruder, `tool1` for the second and so on. For each tool extruded length and volume (based on diameter) are provided. |
+    | `filament.toolX.length` | `float` | The extruded length in mm |
+    | `filament.toolX.volume` | `float` | The extruded volume in cm³ |
+    | `printingArea.*` | `dict` | Bounding box of the printed object in the print volume (minimum and maximum coordinates) |
+    | `printingArea.minX` | `float` | Minimum X coordinate of the printed object |
+    | `printingArea.maxX` | `float` | Maximum X coordinate of the printed object |
+    | `printingArea.minY` | `float` | Minimum Y coordinate of the printed object |
+    | `printingArea.maxY` | `float` | Maximum Y coordinate of the printed object |
+    | `printingArea.minZ` | `float` | Minimum Z coordinate of the printed object |
+    | `printingArea.maxZ` | `float` | Maximum Z coordinate of the printed object |
+    | `dimensions.*` | `dict` | Dimensions of the printed object in X, Y, Z |
+    | `dimensions.width` | `float` | Width of the printed model along the X axis, in mm |
+    | `dimensions.depth` | `float` | Depth of the printed model along the Y axis, in mm |
+    | `dimensions.height` | `float` | Height of the printed model along the Z axis, in mm |
+    | `travelArea.*` | `dict` | Bounding box of all machine movements (minimum and maximum coordinates) |
+    | `travelArea.minX` | `float` | Minimum X coordinate of the machine movements |
+    | `travelArea.maxX` | `float` | Maximum X coordinate of the machine movements |
+    | `travelArea.minY` | `float` | Minimum Y coordinate of the machine movements |
+    | `travelArea.maxY` | `float` | Maximum Y coordinate of the machine movements |
+    | `travelArea.minZ` | `float` | Minimum Z coordinate of the machine movements |
+    | `travelArea.maxZ` | `float` | Maximum Z coordinate of the machine movements |
+    | `travelDimensions.*` | `dict` | Dimensions of the travel area in X, Y, Z |
+    | `travelDimensions.width` | `float` | Width of the travel area along the X axis, in mm |
+    | `travelDimensions.depth` | `float` | Depth of the travel area along the X axis, in mm |
+    | `travelDimensions.height` | `float` | Height of the travel area along the X axis, in mm |
     """
 
     def __init__(self, finished_callback):

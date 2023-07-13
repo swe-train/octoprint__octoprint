@@ -230,8 +230,8 @@ server_options = bulk_options(
         ),
     ]
 )
-"""Decorator to add the options shared among the server commands: ``--host``, ``--port``, ``-4``, ``-6``
-   ``--logging``, ``--iknowwhatimdoing`` and ``--debug``."""
+"""Decorator to add the options shared among the server commands: `--host`, `--port`, `-4`, `-6`
+   `--logging`, `--iknowwhatimdoing` and `--debug`."""
 
 daemon_options = bulk_options(
     [
@@ -244,7 +244,7 @@ daemon_options = bulk_options(
         )
     ]
 )
-"""Decorator to add the options for the daemon subcommand: ``--pid``."""
+"""Decorator to add the options for the daemon subcommand: `--pid`."""
 
 # ~~ "octoprint serve" and "octoprint daemon" commands
 

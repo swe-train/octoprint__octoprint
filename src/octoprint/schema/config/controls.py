@@ -1,16 +1,10 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
 from typing import List, Optional, Union
 
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
-
-
-class LayoutEnum(str, Enum):
-    horizontal = "horizontal"
-    vertical = "vertical"
 
 
 class ControlSliderInputConfig(BaseModel):
@@ -46,7 +40,7 @@ class ContainerConfig(BaseModel):
     name: Optional[str] = None
     """A name to display above the container, basically a section header."""
 
-    layout: LayoutEnum = LayoutEnum.vertical
+    layout: Literal["horizontal", "vertical"] = "vertical"
     """The layout to use for laying out the contained children, either from top to bottom (`vertical`) or from left to right (`horizontal`)."""
 
 

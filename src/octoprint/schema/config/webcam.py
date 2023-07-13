@@ -1,17 +1,10 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
 from typing import Optional
 
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
-
-
-class TimelapseTypeEnum(str, Enum):
-    off = "off"
-    zchange = "zchange"
-    timed = "timed"
 
 
 @with_attrs_docs
@@ -28,7 +21,7 @@ class TimelapseOptions(BaseModel):
 
 @with_attrs_docs
 class TimelapseConfig(BaseModel):
-    type: TimelapseTypeEnum = TimelapseTypeEnum.off
+    type: Literal["off", "zchange", "timed"] = "off"
     """The timelapse type."""
 
     fps: int = 25

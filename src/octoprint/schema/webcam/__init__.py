@@ -1,16 +1,10 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from enum import Enum
 from typing import List, Optional
 
-from octoprint.schema import BaseModel
+from octoprint.schema import BaseModel, Literal
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
-
-
-class RatioEnum(str, Enum):
-    sixteen_nine = "16:9"
-    four_three = "4:3"
 
 
 @with_attrs_docs
@@ -18,7 +12,7 @@ class WebcamCompatibility(BaseModel):
     streamTimeout: int = 5
     """The timeout of the stream in seconds"""
 
-    streamRatio: RatioEnum = RatioEnum.sixteen_nine
+    streamRatio: Literal["16:9", "4:3"] = "16:9"
     """The stream's native aspect ratio"""
 
     streamWebrtcIceServers: List[str] = ["stun:stun.l.google.com:19302"]

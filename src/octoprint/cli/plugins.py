@@ -30,17 +30,14 @@ LOGGING_CONFIG = {
 
 class OctoPrintPluginCommands(click.MultiCommand):
     """
-    Custom `click.MultiCommand <http://click.pocoo.org/5/api/#click.MultiCommand>`_
-    implementation that collects commands from the plugin hook
-    :ref:`octoprint.cli.commands <sec-plugins-hook-cli-commands>`.
+    Custom [click.MultiCommand][] implementation that collects commands from the plugin hook
+    [octoprint.cli.commands][plugin-guide.concepts.hooks.octoprint.cli.commands].
 
-    .. attribute:: settings
-
-       The global :class:`~octoprint.settings.Settings` instance.
-
-    .. attribute:: plugin_manager
-
-       The :class:`~octoprint.plugin.core.PluginManager` instance.
+    Attributes:
+      settings (octoprint.settings.Settings): The global [Settings][octoprint.settings.Settings]
+        instance.
+      plugin_manager (octoprint.plugin.core.PluginManager): The global [PluginManager][octoprint.plugin.core.PluginManager]
+        instance.
     """
 
     sep = ":"
