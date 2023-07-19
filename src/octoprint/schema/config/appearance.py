@@ -1,10 +1,21 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
+from enum import Enum
 from typing import List
 
-from octoprint.schema import BaseModel, Literal
+from octoprint.schema import BaseModel
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
+
+
+class ColorEnum(str, Enum):
+    red = "red"
+    orange = "orange"
+    green = "green"
+    blue = "blue"
+    yellow = "yellow"
+    violet = "violet"
+    default = "default"
 
 
 @with_attrs_docs
@@ -129,9 +140,7 @@ class AppearanceConfig(BaseModel):
     name: str = ""
     """Use this to give your OctoPrint instance a name. It will be displayed in the title bar (as "<Name> [OctoPrint]") and in the navigation bar (as "OctoPrint: <>")"""
 
-    color: Literal[
-        "red", "orange", "green", "blue", "yellow", "violet", "default"
-    ] = "default"
+    color: ColorEnum = ColorEnum.default
     """Use this to color the navigation bar."""
 
     colorTransparent: bool = False

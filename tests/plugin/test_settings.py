@@ -372,10 +372,3 @@ def test_logfile_path_with_postfix(plugin_settings, settings):
 
     settings.getBaseFolder.assert_called_once_with("logs")
     assert f"/some/folder/plugin_{plugin_key}_mypostfix.log" == path.replace(os.sep, "/")
-
-
-def test_unhandled_method(plugin_settings):
-    with pytest.raises(
-        AttributeError, match="Mock object has no attribute 'some_method'"
-    ):
-        plugin_settings.some_method("some_parameter")

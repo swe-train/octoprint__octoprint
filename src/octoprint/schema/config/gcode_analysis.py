@@ -1,8 +1,16 @@
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2022 The OctoPrint Project - Released under terms of the AGPLv3 License"
 
-from octoprint.schema import BaseModel, Literal
+from enum import Enum
+
+from octoprint.schema import BaseModel
 from octoprint.vendor.with_attrs_docs import with_attrs_docs
+
+
+class RunAtEnum(str, Enum):
+    never = "never"
+    idle = "idle"
+    always = "always"
 
 
 @with_attrs_docs
@@ -19,7 +27,7 @@ class GcodeAnalysisConfig(BaseModel):
     throttle_lines: int = 100
     """GCODE line batch size."""
 
-    runAt: Literal["never", "idle", "always"] = "idle"
+    runAt: RunAtEnum = RunAtEnum.idle
     """Whether to run the analysis only when idle (not printing), regardless of printing state or never."""
 
     bedZ: float = 0.0
