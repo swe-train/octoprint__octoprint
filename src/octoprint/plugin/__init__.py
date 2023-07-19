@@ -744,3 +744,6 @@ class PluginSettings:
         Removes all data stored for this plugin.
         """
         self.settings.remove(self._prefix_path())
+
+    def __getattr__(self, item):
+        return getattr(self.settings, item)
