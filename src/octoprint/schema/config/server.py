@@ -158,9 +158,6 @@ class ServerConfig(BaseModel):
     ignoreIncompleteStartup: bool = False
     """Set this to true to make OctoPrint ignore incomplete startups. Helpful for development."""
 
-    incompleteStartup: bool = False
-    """Signals to OctoPrint that the last startup was incomplete. OctoPrint will then startup in safe mode."""
-
     seenWizards: Dict[str, str] = {}
 
     secretKey: Optional[str] = None
