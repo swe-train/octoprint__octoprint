@@ -529,7 +529,7 @@ class PluginSettings:
         Returns:
             (str): The key under which the overlay was added.
         """
-        return self.settings.add_overlay(self._wrap_overlay(overlay), **kwargs)
+        return self.settings.add_overlay(*self._wrap_overlay(overlay), **kwargs)
 
     def remove_overlay(self, key):
         """
