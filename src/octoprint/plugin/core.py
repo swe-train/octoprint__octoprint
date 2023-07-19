@@ -900,23 +900,37 @@ class PluginManager:
                 processed_blacklist.append(entry)
 
         self.plugin_folders = plugin_folders
+        """A list of folders to search for plugins in."""
         self.plugin_bases = plugin_bases
+        """A list of base classes that plugins must inherit from."""
         self.plugin_entry_points = plugin_entry_points
+        """A list of entry points to search for plugins in."""
         self.plugin_disabled_list = plugin_disabled_list
+        """A list of plugin keys that should not be enabled when loading."""
         self.plugin_sorting_order = plugin_sorting_order
+        """A dictionary of plugin keys and their sorting order definitions."""
         self.plugin_blacklist = processed_blacklist
+        """A list of plugin keys that should not be loaded."""
         self.plugin_restart_needing_hooks = plugin_restart_needing_hooks
+        """A list of plugin hooks that need a restart to take effect."""
         self.plugin_obsolete_hooks = plugin_obsolete_hooks
+        """A list of plugin hooks that are obsolete."""
         self.plugin_validators = plugin_validators
+        """A list of validator functions that will be called for each plugin to determine whether it is valid or not."""
         self.logging_prefix = logging_prefix
+        """The logging prefix to use for all plugins."""
         self.compatibility_ignored_list = compatibility_ignored_list
+        """A list of plugin keys that should be ignored when checking for compatibility."""
         self.plugin_considered_bundled = plugin_considered_bundled
+        """A list of plugin keys that are considered bundled."""
 
         self.enabled_plugins = {}
+        """A dictionary of enabled plugins, identifier mapped to plugin."""
         self.disabled_plugins = {}
+        """A dictionary of disabled plugins, identifier mapped to plugin."""
+
         self.plugin_implementations = {}
         self.plugin_implementations_by_type = defaultdict(list)
-
         self._plugin_hooks = defaultdict(list)
 
         self.implementation_injects = {}
@@ -2293,7 +2307,7 @@ class PluginManager:
 
     def get_plugin_info(self, identifier, require_enabled=True):
         """
-        Retrieves the [octoprint.plugin.core.PluginInfo] instance identified by `identifier`.
+        Retrieves the [octoprint.plugin.core.PluginInfo][] instance identified by `identifier`.
 
         If the plugin is not registered or disabled and `required_enabled` is `True` (the default) `None` will be returned.
 
@@ -2531,7 +2545,8 @@ def is_sub_path_of(path, parent):
 
     Examples:
 
-    ```
+    ``` pycon
+
     >>> is_sub_path_of("/a/b/c", "/a/b")
     True
     >>> is_sub_path_of("/a/b/c", "/a/b2")
@@ -2542,6 +2557,7 @@ def is_sub_path_of(path, parent):
     True
     >>> is_sub_path_of("/a/b", "/a/b")
     True
+
     ```
 
     Arguments:
@@ -2619,36 +2635,22 @@ class EntryPointMetadata(pkginfo.Distribution):
 class Plugin:
     """
     The parent class of all plugin implementations.
-
-    .. attribute:: _identifier
-
-       The identifier of the plugin. Injected by the plugin core system upon initialization of the implementation.
-
-    .. attribute:: _plugin_name
-
-       The name of the plugin. Injected by the plugin core system upon initialization of the implementation.
-
-    .. attribute:: _plugin_version
-
-       The version of the plugin. Injected by the plugin core system upon initialization of the implementation.
-
-    .. attribute:: _basefolder
-
-       The base folder of the plugin. Injected by the plugin core system upon initialization of the implementation.
-
-    .. attribute:: _logger
-
-       The logger instance to use, with the logging name set to the :attr:`PluginManager.logging_prefix` of the
-       :class:`PluginManager` concatenated with :attr:`_identifier`. Injected by the plugin core system upon
-       initialization of the implementation.
     """
 
     def __init__(self):
         self._identifier = None
+        """The identifier of the plugin."""
         self._plugin_name = None
+        """The name of the plugin."""
         self._plugin_version = None
+        """The version of the plugin."""
         self._basefolder = None
+        """The base folder of the plugin."""
         self._logger = None
+        """
+        The logger instance to use, with the logging name set to [octoprint.plugin.core.PluginManager.logging_prefix][]
+        concatenated with the contents of `_identifier`.
+        """
 
     def initialize(self):
         """
@@ -2684,25 +2686,27 @@ class SortablePlugin(Plugin):
         """
         Returns the sorting key to use for the implementation in the specified ``context``.
 
-        May return ``None`` if order is irrelevant.
+        May return `None` if order is irrelevant.
 
-        Implementations returning None will be ordered by plugin identifier
+        Implementations returning `None` will be ordered by plugin identifier
         after all implementations which did return a sorting key value that was
-        not None sorted by that.
+        not `None` sorted by that.
 
         Arguments:
             context (str): The sorting context for which to provide the
                 sorting key value.
 
         Returns:
-            int or None: An integer signifying the sorting key value of the plugin
-                (sorting will be done ascending), or None if the implementation
+            (int | None): An integer signifying the sorting key value of the plugin
+                (sorting will be done ascending), or `None` if the implementation
                 doesn't care about calling order.
         """
         return None
 
 
 class PluginNeedsRestart(Exception):
+    """Thrown by plugins that need a restart after enabling/disabling them."""
+
     def __init__(self, name):
         Exception.__init__(self)
         self.name = name
@@ -2710,6 +2714,8 @@ class PluginNeedsRestart(Exception):
 
 
 class PluginLifecycleException(Exception):
+    """General plugin lifecycle exception."""
+
     def __init__(self, name, reason, message):
         Exception.__init__(self)
         self.name = name
@@ -2722,6 +2728,8 @@ class PluginLifecycleException(Exception):
 
 
 class PluginCantInitialize(PluginLifecycleException):
+    """Thrown by plugins that cannot be initialized."""
+
     def __init__(self, name, reason):
         PluginLifecycleException.__init__(
             self, name, reason, "Plugin {name} cannot be initialized: {reason}"
@@ -2729,6 +2737,8 @@ class PluginCantInitialize(PluginLifecycleException):
 
 
 class PluginCantEnable(PluginLifecycleException):
+    """Thrown by plugins that cannot be enabled."""
+
     def __init__(self, name, reason):
         PluginLifecycleException.__init__(
             self, name, reason, "Plugin {name} cannot be enabled: {reason}"
@@ -2736,6 +2746,8 @@ class PluginCantEnable(PluginLifecycleException):
 
 
 class PluginCantDisable(PluginLifecycleException):
+    """Thrown by plugins that cannot be disabled."""
+
     def __init__(self, name, reason):
         PluginLifecycleException.__init__(
             self, name, reason, "Plugin {name} cannot be disabled: {reason}"

@@ -1,18 +1,6 @@
 """
 This module bundles all of OctoPrint's supported plugin implementation types as well as their common parent
-class, :class:`OctoPrintPlugin`.
-
-Please note that the plugin implementation types are documented in the section
-:ref:`Available plugin mixins <sec-plugins-mixins>`.
-
-.. autoclass:: OctoPrintPlugin
-   :show-inheritance:
-   :members:
-
-.. autoclass:: ReloadNeedingPlugin
-   :show-inheritance:
-   :members:
-
+class, `OctoPrintPlugin`.
 """
 
 __author__ = "Gina Häußge <osd@foosel.net>"
@@ -25,85 +13,83 @@ from .core import Plugin, RestartNeedingPlugin, SortablePlugin
 
 class OctoPrintPlugin(Plugin):
     """
-    The parent class of all OctoPrint plugin mixins.
-
-    .. attribute:: _plugin_manager
-
-       The :class:`~octoprint.plugin.core.PluginManager` instance. Injected by the plugin core system upon
-       initialization of the implementation.
-
-    .. attribute:: _printer_profile_manager
-
-       The :class:`~octoprint.printer.profile.PrinterProfileManager` instance. Injected by the plugin core system upon
-       initialization of the implementation.
-
-    .. attribute:: _event_bus
-
-       The :class:`~octoprint.events.EventManager` instance. Injected by the plugin core system upon initialization of
-       the implementation.
-
-    .. attribute:: _analysis_queue
-
-       The :class:`~octoprint.filemanager.analysis.AnalysisQueue` instance. Injected by the plugin core system upon
-       initialization of the implementation.
-
-    .. attribute:: _slicing_manager
-
-       The :class:`~octoprint.slicing.SlicingManager` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _file_manager
-
-       The :class:`~octoprint.filemanager.FileManager` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _printer
-
-       The :class:`~octoprint.printer.PrinterInterface` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _app_session_manager
-
-       The :class:`~octoprint.access.users.SessionManager` instance. Injected by the plugin core system upon initialization of
-       the implementation.
-
-    .. attribute:: _plugin_lifecycle_manager
-
-       The :class:`~octoprint.server.LifecycleManager` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _user_manager
-
-       The :class:`~octoprint.access.users.UserManager` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _connectivity_checker
-
-       The :class:`~octoprint.util.ConnectivityChecker` instance. Injected by the plugin core system upon initialization
-       of the implementation.
-
-    .. attribute:: _data_folder
-
-       Path to the data folder for the plugin to use for any data it might have to persist. Should always be accessed
-       through :meth:`get_plugin_data_folder` since that function will also ensure that the data folder actually exists
-       and if not creating it before returning it. Injected by the plugin core system upon initialization of the
-       implementation.
+    The parent class of all OctoPrint plugin mixins and thus implementations.
     """
 
     # noinspection PyMissingConstructor
     def __init__(self):
         self._plugin_manager = None
+        """
+        The [octoprint.plugin.core.PluginManager][] instance. Injected by the plugin core system upon
+        initialization of the implementation.
+        """
+
         self._printer_profile_manager = None
+        """
+        The [octoprint.printer.profile.PrinterProfileManager][] instance. Injected by the plugin core system upon
+        initialization of the implementation.
+        """
+
         self._event_bus = None
+        """
+        The [octoprint.events.EventManager][] instance. Injected by the plugin core system upon initialization of
+        the implementation.
+        """
+
         self._analysis_queue = None
+        """
+        The [octoprint.filemanager.analysis.AnalysisQueue][] instance. Injected by the plugin core system upon
+        initialization of the implementation.
+        """
+
         self._slicing_manager = None
+        """
+        The [octoprint.slicing.SlicingManager][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._file_manager = None
+        """
+        The [octoprint.filemanager.FileManager][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._printer = None
+        """
+        The [octoprint.printer.PrinterInterface][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._app_session_manager = None
+        """
+        The [octoprint.access.users.SessionManager][] instance. Injected by the plugin core system upon initialization of
+        the implementation.
+        """
+
         self._plugin_lifecycle_manager = None
+        """
+        The [octoprint.server.LifecycleManager][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._user_manager = None
+        """
+        The [octoprint.access.users.UserManager][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._connectivity_checker = None
+        """
+        The [octoprint.util.ConnectivityChecker][] instance. Injected by the plugin core system upon initialization
+        of the implementation.
+        """
+
         self._data_folder = None
+        """
+        Path to the data folder for the plugin to use for any data it might have to persist. Should always be accessed
+        through [get_plugin_data_folder][octoprint.plugin.types.OctoPrintPlugin.get_plugin_data_folder] since that
+        function will also ensure that the data folder actually exists.
+        """
 
     def get_plugin_data_folder(self):
         """
@@ -111,6 +97,9 @@ class OctoPrintPlugin(Plugin):
         before returning it.
 
         Plugins may use this folder for storing additional data they need for their operation.
+
+        Returns:
+            (str): The path to the plugin's data folder, ensured to be existing.
         """
         if self._data_folder is None:
             raise RuntimeError(
@@ -140,55 +129,67 @@ class ReloadNeedingPlugin(Plugin):
 
 class EnvironmentDetectionPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     """
-    .. versionadded:: 1.3.6
+    [[ version_added 1.3.6 ]]
     """
 
     def get_additional_environment(self):
+        """
+        Allows the plugin to provide additional environment information.
+
+        Returns:
+            (dict): A dictionary of additional environment information.
+        """
         pass
 
     def on_environment_detected(self, environment, *args, **kwargs):
+        """
+        Called when the environment information has been gathered.
+
+        Arguments:
+            environment (dict): The environment information.
+        """
         pass
 
 
 class StartupPlugin(OctoPrintPlugin, SortablePlugin):
     """
-    The ``StartupPlugin`` allows hooking into the startup of OctoPrint. It can be used to start up additional services
+    The `StartupPlugin` allows hooking into the startup of OctoPrint. It can be used to start up additional services
     on or just after the startup of the server.
 
-    ``StartupPlugin`` is a :class:`~octoprint.plugin.core.SortablePlugin` and provides
-    sorting contexts for :meth:`~octoprint.plugin.StartupPlugin.on_startup` as well as
-    :meth:`~octoprint.plugin.StartupPlugin.on_after_startup`.
+    `StartupPlugin` is a [SortablePlugin][octoprint.plugin.core.SortablePlugin] and provides
+    sorting contexts for `on_startup` as well as `on_after_startup`.
     """
 
     def on_startup(self, host, port):
         """
-        Called just before the server is actually launched. Plugins get supplied with the ``host`` and ``port`` the server
-        will listen on. Note that the ``host`` may be ``0.0.0.0`` if it will listen on all interfaces, so you can't just
+        Called just before the server is actually launched. Plugins get supplied with the `host` and `port` the server
+        will listen on. Note that the `host` may be `0.0.0.0` if it will listen on all interfaces, so you can't just
         blindly use this for constructing publicly reachable URLs. Also note that when this method is called, the server
         is not actually up yet and none of your plugin's APIs or blueprints will be reachable yet. If you need to be
-        externally reachable, use :func:`on_after_startup` instead or additionally.
+        externally reachable, use `on_after_startup` instead or additionally.
 
-        .. warning::
+        !!! warning
 
-           Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
+            Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
 
-        The relevant sorting context is ``StartupPlugin.on_startup``.
+        The relevant sorting context is `StartupPlugin.on_startup`.
 
-        :param string host: the host the server will listen on, may be ``0.0.0.0``
-        :param int port:    the port the server will listen on
+        Arguments:
+            host (str): The host the server will listen on, may be `0.0.0.0`
+            port (int): The port the server will listen on
         """
 
         pass
 
     def on_after_startup(self):
         """
-        Called just after launch of the server, so when the listen loop is actually running already.
+        Called just after launch of the server, when the listen loop is actually running already.
 
-        .. warning::
+        !!! warning
 
-           Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
+            Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
 
-        The relevant sorting context is ``StartupPlugin.on_after_startup``.
+        The relevant sorting context is `StartupPlugin.on_after_startup`.
         """
 
         pass
@@ -196,45 +197,48 @@ class StartupPlugin(OctoPrintPlugin, SortablePlugin):
 
 class ShutdownPlugin(OctoPrintPlugin, SortablePlugin):
     """
-    The ``ShutdownPlugin`` allows hooking into the shutdown of OctoPrint. It's usually used in conjunction with the
-    :class:`StartupPlugin` mixin, to cleanly shut down additional services again that where started by the :class:`StartupPlugin`
+    The `ShutdownPlugin` allows hooking into the shutdown of OctoPrint. It's usually used in conjunction with the
+    `StartupPlugin` mixin, to cleanly shut down additional services again that where started by the `StartupPlugin`
     part of the plugin.
 
-    ``ShutdownPlugin`` is a :class:`~octoprint.plugin.core.SortablePlugin` and provides a sorting context for
-    :meth:`~octoprint.plugin.ShutdownPlugin.on_shutdown`.
+    `ShutdownPlugin` is a [SortablePlugin][octoprint.plugin.core.SortablePlugin] and provides a sorting context for
+    `on_shutdown`.
     """
 
     def on_shutdown(self):
         """
         Called upon the imminent shutdown of OctoPrint.
 
-        .. warning::
+        !!! warning
 
-           Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
+            Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
 
-        The relevant sorting context is ``ShutdownPlugin.on_shutdown``.
+        The relevant sorting context is `ShutdownPlugin.on_shutdown`.
         """
         pass
 
 
 class AssetPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     """
-    The ``AssetPlugin`` mixin allows plugins to define additional static assets such as JavaScript or CSS files to
+    The `AssetPlugin` mixin allows plugins to define additional static assets such as JavaScript or CSS files to
     be automatically embedded into the pages delivered by the server to be used within the client sided part of
     the plugin.
 
-    A typical usage of the ``AssetPlugin`` functionality is to embed a custom view model to be used by templates injected
-    through a :class:`TemplatePlugin`.
+    A typical usage of the `AssetPlugin` functionality is to embed a custom view model to be used by templates injected
+    through a [TemplatePlugin][octoprint.plugin.types.TemplatePlugin].
 
-    ``AssetPlugin`` is a :class:`~octoprint.plugins.core.RestartNeedingPlugin`.
+    `AssetPlugin` is a [RestartNeedingPlugin][octoprint.plugin.core.RestartNeedingPlugin].
     """
 
     def get_asset_folder(self):
         """
-        Defines the folder where the plugin stores its static assets as defined in :func:`get_assets`. Override this if
-        your plugin stores its assets at some other place than the ``static`` sub folder in the plugin base directory.
+        Defines the folder where the plugin stores its static assets as defined in `get_assets`.
 
-        :return string: the absolute path to the folder where the plugin stores its static assets
+        Override this if your plugin stores its assets at some other place than the `static` sub folder in the
+        plugin base directory.
+
+        Returns:
+            (str): The absolute path to the folder where the plugin stores its static assets.
         """
         import os
 
@@ -242,149 +246,60 @@ class AssetPlugin(OctoPrintPlugin, RestartNeedingPlugin):
 
     def get_assets(self):
         """
-        Defines the static assets the plugin offers. The following asset types are recognized and automatically
-        imported at the appropriate places to be available:
+        Defines the static assets the plugin offers.
 
-        js
-           JavaScript files, such as additional view models
-        jsclient
-           JavaScript files containing additional parts for the JS Client Library (since 1.3.10)
-        css
-           CSS files with additional styles, will be embedded into delivered pages when not running in LESS mode.
-        less
-           LESS files with additional styles, will be embedded into delivered pages when running in LESS mode.
+        The following asset types are recognized and automatically imported at the appropriate places to be available:
+
+        - `js`: JavaScript files, such as additional view models
+        - `jsclient`: JavaScript files containing additional parts for the JS Client Library ([[ version_added 1.3.10 ]])
+        - `css`: CSS files with additional styles, will be embedded into delivered pages when not running in LESS mode.
+        - `less`: LESS files with additional styles, will be embedded into delivered pages when running in LESS mode.
 
         The expected format to be returned is a dictionary mapping one or more of these keys to a list of files of that
-        type, the files being represented as relative paths from the asset folder as defined via :func:`get_asset_folder`.
+        type, the files being represented as relative paths from the asset folder as defined via `get_asset_folder`.
+
         Example:
 
-        .. code-block:: python
+        ``` python
+        def get_assets(self):
+            return dict(
+                js=['js/my_file.js', 'js/my_other_file.js'],
+                clientjs=['clientjs/my_file.js'],
+                css=['css/my_styles.css'],
+                less=['less/my_styles.less']
+            )
+        ```
 
-           def get_assets(self):
-               return dict(
-                   js=['js/my_file.js', 'js/my_other_file.js'],
-                   clientjs=['clientjs/my_file.js'],
-                   css=['css/my_styles.css'],
-                   less=['less/my_styles.less']
-                )
+        The assets will be made available by OctoPrint under the URL `/plugin/<plugin identifier>/static/<path>`, with
+        `plugin identifier` being the plugin's identifier and `path` being the path as defined in the asset dictionary.
 
-        The assets will be made available by OctoPrint under the URL ``/plugin/<plugin identifier>/static/<path>``, with
-        ``plugin identifier`` being the plugin's identifier and ``path`` being the path as defined in the asset dictionary.
+        Assets of the types `js`, `css` and `less` will be automatically bundled by OctoPrint using
+        [Flask-Assets](http://flask-assets.readthedocs.org/en/latest/).
 
-        Assets of the types ``js``, ``css`` and ``less`` will be automatically bundled by OctoPrint using
-        `Flask-Assets <http://flask-assets.readthedocs.org/en/latest/>`_.
-
-        :return dict: a dictionary describing the static assets to publish for the plugin
+        Returns:
+            (dict): A dictionary mapping asset types to lists of files of that type.
         """
         return {}
 
 
 class TemplatePlugin(OctoPrintPlugin, ReloadNeedingPlugin):
     """
-    Using the ``TemplatePlugin`` mixin plugins may inject their own components into the OctoPrint web interface.
+    Using the `TemplatePlugin` mixin plugins may inject their own components into the OctoPrint web interface.
 
-    Currently OctoPrint supports the following types of injections out of the box:
+    You can find an example for a simple plugin which injects navbar, tab and settings content into the interface in
+    the "helloworld" plugin in OctoPrint's [Plugin Tutorial][].
 
-    Navbar
-       The right part of the navigation bar located at the top of the UI can be enriched with additional links. Note that
-       with the current implementation, plugins will always be located *to the left* of the existing links.
+    Plugins may replace existing components, see the `replaces` keyword in the template configurations returned by
+    `get_template_configs` below. Note that if a plugin replaces a core component, it is the plugin's responsibility
+    to ensure that all core functionality is still maintained.
 
-       The included template must be called ``<plugin identifier>_navbar.jinja2`` (e.g. ``myplugin_navbar.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
+    Plugins can also add additional template types by implementing the [octoprint.ui.web.templatetypes][] hook.
 
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapper structure will have all additional classes and styles applied as specified via the configuration supplied
-       through :func:`get_template_configs`.
+    `TemplatePlugin` is a [ReloadNeedingPlugin][octoprint.plugin.core.ReloadNeedingPlugin].
 
-    Sidebar
-       The left side bar containing Connection, State and Files sections can be enriched with additional sections. Note
-       that with the current implementations, plugins will always be located *beneath* the existing sections.
+    ## Supported template types
 
-       The included template must be called ``<plugin identifier>_sidebar.jinja2`` (e.g. ``myplugin_sidebar.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapper divs for both the whole box as well as the content pane will have all additional classes and styles applied
-       as specified via the configuration supplied through :func:`get_template_configs`.
-
-    Tabs
-       The available tabs of the main part of the interface may be extended with additional tabs originating from within
-       plugins. Note that with the current implementation, plugins will always be located *to the right* of the existing
-       tabs.
-
-       The included template must be called ``<plugin identifier>_tab.jinja2`` (e.g. ``myplugin_tab.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapper div and the link in the navigation will have the additional classes and styles applied as specified via the
-       configuration supplied through :func:`get_template_configs`.
-
-    Settings
-       Plugins may inject a dialog into the existing settings view. Note that with the current implementation, plugins
-       will always be listed beneath the "Plugins" header in the settings link list, ordered alphabetically after
-       their displayed name.
-
-       The included template must be called ``<plugin identifier>_settings.jinja2`` (e.g. ``myplugin_settings.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapper div and the link in the navigation will have the additional classes and styles applied as defined via the
-       configuration through :func:`get_template_configs`.
-
-    Webcam
-       Plugins can provide a custom webcam view for watching a camera stream, which will be embedded into the "Control"
-       panel of OctoPrint's default UI.
-
-       The included template must be called ``<plugin identifier>_webcam.jinja2`` (e.g. ``myplugin_webcam.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapper div will have the additional classes and styles applied as defined via the configuration through :func:`get_template_configs`.
-
-       .. versionadded:: 1.9.0
-
-    Wizards
-       Plugins may define wizard dialogs to display to the user if necessary (e.g. in case of missing information that
-       needs to be queried from the user to make the plugin work). Note that with the current implementation, all
-       wizard dialogs will be will always be sorted by their ``mandatory`` attribute (which defaults to ``False``) and then
-       alphabetically by their ``name``. Hence, mandatory wizard steps will come first, sorted alphabetically, then the
-       optional steps will follow, also alphabetically. A wizard dialog provided through a plugin will only be displayed
-       if the plugin reports the wizard as being required through :meth:`~octoprint.plugin.WizardPlugin.is_wizard_required`.
-       Please also refer to the :class:`~octoprint.plugin.WizardPlugin` mixin for further details on this.
-
-       The included template must be called ``<plugin identifier>_wizard.jinja2`` (e.g. ``myplugin_wizard.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content.
-       The wrapper div and the link in the wizard navigation will have the additional classes and styles applied as defined
-       via the configuration supplied through :func:`get_template_configs`.
-
-       .. note::
-
-          A note about ``mandatory`` wizard steps: In the current implementation, marking a wizard step as
-          mandatory will *only* make it styled accordingly. It is the task of the :ref:`view model <sec-plugins-viewmodels>`
-          to actually prevent the user from skipping the dialog by implementing the ``onWizardTabChange``
-          callback and returning ``false`` there if it is detected that the user hasn't yet filled in the
-          wizard step.
-
-       .. versionadded:: 1.3.0
-
-    About
-       Plugins may define additional panels into OctoPrint's "About" dialog. Note that with the current implementation
-       further about dialog panels will be sorted alphabetically by their name and sorted after the predefined ones.
-
-       The included template must be called ``<plugin identifier>_about.jinja2`` (e.g. ``myplugin_about.jinja2``) unless
-       overridden by the configuration supplied through :func:`get_template_configs`.
-
-       The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
-       wrapped div and the link in the navigation will have the additional classes and styles applied as defined via
-       the configuration supplied through :func:`get_template_configs`.
-
-       .. versionadded:: 1.3.0
-
-    Generic
-       Plugins may also inject arbitrary templates into the page of the web interface itself, e.g. in order to
-       add overlays or dialogs to be called from within the plugin's JavaScript code.
+    Currently OctoPrint supports several types out of the box which are described below.
 
     .. figure:: ../images/template-plugin-types-main.png
        :align: center
@@ -398,16 +313,115 @@ class TemplatePlugin(OctoPrintPlugin, ReloadNeedingPlugin):
 
        Template injection types in the settings
 
-    You can find an example for a simple plugin which injects navbar, tab and settings content into the interface in
-    the "helloworld" plugin in OctoPrint's :ref:`Plugin Tutorial <sec-plugins-gettingstarted>`.
+    ### Navbar
 
-    Plugins may replace existing components, see the ``replaces`` keyword in the template configurations returned by
-    :meth:`.get_template_configs` below. Note that if a plugin replaces a core component, it is the plugin's
-    responsibility to ensure that all core functionality is still maintained.
+    The right part of the navigation bar located at the top of the UI can be enriched with additional links. Note that
+    with the current implementation, plugins will always be located *to the left* of the existing links.
 
-    Plugins can also add additional template types by implementing the :ref:`octoprint.ui.web.templatetypes <sec-plugins-hook-ui-web-templatetypes>` hook.
+    The included template must be called `<plugin identifier>_navbar.jinja2` (e.g. `myplugin_navbar.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
 
-    ``TemplatePlugin`` is a :class:`~octoprint.plugin.core.ReloadNeedingPlugin`.
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapper structure will have all additional classes and styles applied as specified via the configuration supplied
+    through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    ### Sidebar
+
+    The left side bar containing Connection, State and Files sections can be enriched with additional sections. Note
+    that with the current implementations, plugins will always be located *beneath* the existing sections.
+
+    The included template must be called `<plugin identifier>_sidebar.jinja2` (e.g. `myplugin_sidebar.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapper divs for both the whole box as well as the content pane will have all additional classes and styles applied
+    as specified via the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    ### Tabs
+
+    The available tabs of the main part of the interface may be extended with additional tabs originating from within
+    plugins. Note that with the current implementation, plugins will always be located *to the right* of the existing
+    tabs.
+
+    The included template must be called `<plugin identifier>_tab.jinja2` (e.g. `myplugin_tab.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapper div and the link in the navigation will have the additional classes and styles applied as specified via the
+    configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    ### Settings
+
+    Plugins may inject a dialog into the existing settings view. Note that with the current implementation, plugins
+    will always be listed beneath the "Plugins" header in the settings link list, ordered alphabetically after
+    their displayed name.
+
+    The included template must be called `<plugin identifier>_settings.jinja2` (e.g. `myplugin_settings.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapper div and the link in the navigation will have the additional classes and styles applied as defined via the
+    configuration through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    ### Webcam
+
+    Plugins can provide a custom webcam view for watching a camera stream, which will be embedded into the "Control"
+    panel of OctoPrint's default UI.
+
+    The included template must be called `<plugin identifier>_webcam.jinja2` (e.g. `myplugin_webcam.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapper div will have the additional classes and styles applied as defined via the configuration through
+    [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    [[ version_added 1.9.0 ]]
+
+    ### Wizards
+
+    Plugins may define wizard dialogs to display to the user if necessary (e.g. in case of missing information that
+    needs to be queried from the user to make the plugin work). Note that with the current implementation, all
+    wizard dialogs will be will always be sorted by their `mandatory` attribute (which defaults to `False`) and then
+    alphabetically by their `name`. Hence, mandatory wizard steps will come first, sorted alphabetically, then the
+    optional steps will follow, also alphabetically. A wizard dialog provided through a plugin will only be displayed
+    if the plugin reports the wizard as being required through [`is_wizard_required`][octoprint.plugin.WizardPlugin.is_wizard_required].
+    Please also refer to the [octoprint.plugin.WizardPlugin][] mixin for further details on this.
+
+    The included template must be called `<plugin identifier>_wizard.jinja2` (e.g. `myplugin_wizard.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content.
+    The wrapper div and the link in the wizard navigation will have the additional classes and styles applied as defined
+    via the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    !!! note
+
+        A note about `mandatory` wizard steps: In the current implementation, marking a wizard step as
+        mandatory will *only* make it styled accordingly. It is the task of the [view model][]
+        to actually prevent the user from skipping the dialog by implementing the `onWizardTabChange`
+        callback and returning `false` there if it is detected that the user hasn't yet filled in the
+        wizard step.
+
+    [[ version_added 1.3.0 ]]
+
+    ### About
+
+    Plugins may define additional panels into OctoPrint's "About" dialog. Note that with the current implementation
+    further about dialog panels will be sorted alphabetically by their name and sorted after the predefined ones.
+
+    The included template must be called `<plugin identifier>_about.jinja2` (e.g. `myplugin_about.jinja2`) unless
+    overridden by the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    The template will be already wrapped into the necessary structure, plugins just need to supply the pure content. The
+    wrapped div and the link in the navigation will have the additional classes and styles applied as defined via
+    the configuration supplied through [`get_template_configs`][octoprint.plugin.types.TemplatePlugin.get_template_configs].
+
+    [[ version_added 1.3.0 ]]
+
+    ### Generic
+
+    Plugins may also inject arbitrary templates into the page of the web interface itself, e.g. in order to
+    add overlays or dialogs to be called from within the plugin's JavaScript code.
     """
 
     @property

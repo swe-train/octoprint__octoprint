@@ -42,6 +42,8 @@ def plugin_manager(
     Factory method for initially constructing and consecutively retrieving the [PluginManager][octoprint.plugin.core.PluginManager]
     singleton.
 
+    Will set the logging prefix to `octoprint.plugins.`.
+
     Arguments:
         init (bool): A flag indicating whether this is the initial call to construct the singleton (`True`) or not
             (`False`, default). If this is set to `True` and the plugin manager has already been initialized, a [ValueError][]
@@ -61,12 +63,14 @@ def plugin_manager(
         plugin_blacklist (list): A list of plugin identifiers/identifier-requirement tuples
             that are currently blacklisted.
         plugin_restart_needing_hooks (list): A list of hook namespaces which cause a plugin to need a restart in order
-            be enabled/disabled. Does not have to contain full hook identifiers, will be matched with startswith similar
-            to logging handlers
+            be enabled/disabled. Does not have to contain full hook identifiers, will be matched with glob patterns. If
+            not provided this defaults to `octoprint.server.http.*`, `octoprint.printer.factory`,
+            `octoprint.access.permissions` and `octoprint.timelapse.extensions`.
         plugin_obsolete_hooks (list): A list of hooks that have been declared obsolete. Plugins implementing them will
-            not be enabled since they might depend on functionality that is no longer available.
+            not be enabled since they might depend on functionality that is no longer available. If not provided this
+            defaults to `octoprint.comm.protocol.gcode`.
         plugin_considered_bundled (list): A list of plugin identifiers that are considered bundled plugins even if
-            installed separately.
+            installed separately. If not provided this defaults to `firmware_check`, `file_check` and `pi_support`.
         plugin_validators (list): A list of additional plugin validators through which to process each plugin.
         compatibility_ignored_list (list): A list of plugin keys for which it will be ignored if they are flagged as
             incompatible. This is for development purposes only and should not be used in production.
@@ -96,13 +100,19 @@ def plugin_manager(
                     "octoprint.printer.factory",
                     "octoprint.access.permissions",
                     "octoprint.timelapse.extensions",
-                ]
+                ]  # if changed update docs above!
 
             if plugin_obsolete_hooks is None:
-                plugin_obsolete_hooks = ["octoprint.comm.protocol.gcode"]
+                plugin_obsolete_hooks = [
+                    "octoprint.comm.protocol.gcode"
+                ]  # if changed update docs above!
 
             if plugin_considered_bundled is None:
-                plugin_considered_bundled = ["firmware_check", "file_check", "pi_support"]
+                plugin_considered_bundled = [
+                    "firmware_check",
+                    "file_check",
+                    "pi_support",
+                ]  # if changed update docs above!
 
             if plugin_validators is None:
                 plugin_validators = [_validate_plugin]
@@ -113,7 +123,7 @@ def plugin_manager(
                 plugin_folders,
                 plugin_bases,
                 plugin_entry_points,
-                logging_prefix="octoprint.plugins.",
+                logging_prefix="octoprint.plugins.",  # if changed update docs above!
                 plugin_disabled_list=plugin_disabled_list,
                 plugin_sorting_order=plugin_sorting_order,
                 plugin_blacklist=plugin_blacklist,
