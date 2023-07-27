@@ -295,23 +295,21 @@ class TemplatePlugin(OctoPrintPlugin, ReloadNeedingPlugin):
 
     Plugins can also add additional template types by implementing the [octoprint.ui.web.templatetypes][] hook.
 
-    `TemplatePlugin` is a [ReloadNeedingPlugin][octoprint.plugin.core.ReloadNeedingPlugin].
+    `TemplatePlugin` is a [ReloadNeedingPlugin][octoprint.plugin.types.ReloadNeedingPlugin].
 
     ## Supported template types
 
     Currently OctoPrint supports several types out of the box which are described below.
 
-    .. figure:: ../images/template-plugin-types-main.png
-       :align: center
-       :alt: Template injection types in the main part of the interface
+    <figure markdown>
+      ![Template injection types in the main part of the interface](site:images/reference/octoprint/plugin/types/template-plugin-types-main.png)
+      <figcaption>Template injection types in the main part of the interface</figcaption>
+    </figure>
 
-       Template injection types in the main part of the interface
-
-    .. figure:: ../images/template-plugin-types-settings.png
-       :align: center
-       :alt: Template injection types in the settings
-
-       Template injection types in the settings
+    <figure markdown>
+      ![Template injection types in the settings](site:images/reference/octoprint/plugin/types/template-plugin-types-settings.png)
+      <figcaption>Template injection types in the settings</figcaption>
+    </figure>
 
     ### Navbar
 
@@ -656,64 +654,15 @@ class UiPlugin(OctoPrintPlugin, SortablePlugin):
         at it being a mobile device:
 
         ```python title="dummy_mobile_ui/__init__.py"
-        from __future__ import absolute_import
-
-        import octoprint.plugin
-
-        class DummyMobileUiPlugin(octoprint.plugin.UiPlugin,
-                                  octoprint.plugin.TemplatePlugin):
-
-            def will_handle_ui(self, request):
-                # returns True if the User Agent sent by the client matches one of
-                # the User Agent strings known for any of the platforms android, ipad
-                # or iphone
-                return request.user_agent and \
-                    request.user_agent.platform in ("android", "ipad", "iphone")
-
-            def on_ui_render(self, now, request, render_kwargs):
-                # if will_handle_ui returned True, we will now render our custom index
-                # template, using the render_kwargs as provided by OctoPrint
-                from flask import make_response, render_template
-                return make_response(render_template("dummy_mobile_ui_index.jinja2",
-                                                    **render_kwargs))
-
-        __plugin_name__ = "Dummy Mobile UI"
-        __plugin_pythoncompat__ = ">=3.7,<4"
-        __plugin_implementation__ = DummyMobileUiPlugin()
+        --8<--
+        https://github.com/OctoPrint/Plugin-Examples/raw/master/dummy_mobile_ui/__init__.py
+        --8<--
         ```
 
-        ```jinja2 title="dummy_mobile_ui/templates/dummy_mobile_ui_index.jinja2"
-        <html>
-            <head>
-                <title>Dummy Mobile OctoPrint UI</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-            </head>
-            <body>
-                <h1>Dummy Mobile OctoPrint UI</h1>
-
-                <p>
-                    Well hello there. Sadly, this is only a placeholder page used to
-                    demonstrate how UiPlugins work. Hence the "Dummy" in the name.
-                    Hope you are not too disappointed :)
-                </p>
-
-                <p>
-                    Some data from the <code>render_kwargs</code> passed to this
-                    template:
-                </p>
-
-                <ul>
-                    <!--
-                    We can include any render keywords arguments by their name,
-                    using the regular Jinja templating functionality.
-                    -->
-                    <li>Version: {{ display_version }}</li>
-                    <li>Debug: {{ debug }}</li>
-                    <li>Template Count: {{ templates|length }}</li>
-                    <li>Installed Plugins: {{ pluginNames|join(", ") }}</li>
-                </ul>
-            </body>
-        </html>
+        ```jinja title="dummy_mobile_ui/templates/dummy_mobile_ui_index.jinja2"
+        --8<--
+        https://github.com/OctoPrint/Plugin-Examples/raw/master/dummy_mobile_ui/templates/dummy_mobile_ui_index.jinja2
+        --8<--
         ```
 
         Try installing the above plugin `dummy_mobile_ui` (also available in the
@@ -1160,12 +1109,12 @@ class WizardPlugin(OctoPrintPlugin, ReloadNeedingPlugin):
         ```
                |  current  |
                | N | 1 | 2 |   N = None
-           ----+---+---+---+   X = ignored
-           s N | X |   |   |
+           ----+---+---+---+   X = shown
+           s N | . | X | X |   . = ignored
            e --+---+---+---+
-           e 1 | X | X |   |
+           e 1 | . | . | X |
            n --+---+---+---+
-             2 | X | X | X |
+             2 | . | . | . |
            ----+---+---+---+
         ```
 
@@ -1382,84 +1331,83 @@ class SimpleApiPlugin(OctoPrintPlugin):
 
 class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     """
-    The ``BlueprintPlugin`` mixin allows plugins to define their own full fledged endpoints for whatever purpose,
-    be it a more sophisticated API than what is possible via the :class:`SimpleApiPlugin` or a custom web frontend.
+    The `BlueprintPlugin` mixin allows plugins to define their own full fledged endpoints for whatever purpose,
+    be it a more sophisticated API than what is possible via the [`SimpleApiPlugin`][octoprint.plugin.types.SimpleApiPlugin] or a custom web frontend.
 
-    The mechanism at work here is `Flask's <https://flask.palletsprojects.com/>`_ own `Blueprint mechanism <https://flask.palletsprojects.com/blueprints/>`_.
+    The mechanism at work here is Flask's own [Blueprint mechanism](https://flask.palletsprojects.com/blueprints/).
 
-    The mixin automatically creates a blueprint for you that will be registered under ``/plugin/<plugin identifier>/``.
-    All you need to do is decorate all of your view functions with the :func:`route` decorator,
-    which behaves exactly the same like Flask's regular ``route`` decorators. Example:
+    The mixin automatically creates a blueprint for you that will be registered under `/plugin/<plugin identifier>/`.
+    All you need to do is decorate all of your view functions with the `@route` decorator,
+    which behaves exactly the same like Flask's regular `@route` decorators. Example:
 
-    .. code-block:: python
+    ```python
+    import octoprint.plugin
+    import flask
 
-       import octoprint.plugin
-       import flask
+    class MyBlueprintPlugin(octoprint.plugin.BlueprintPlugin):
+        @octoprint.plugin.BlueprintPlugin.route("/echo", methods=["GET"])
+        def myEcho(self):
+            if not "text" in flask.request.values:
+                abort(400, description="Expected a text to echo back.")
+            return flask.request.values["text"]
 
-       class MyBlueprintPlugin(octoprint.plugin.BlueprintPlugin):
-           @octoprint.plugin.BlueprintPlugin.route("/echo", methods=["GET"])
-           def myEcho(self):
-               if not "text" in flask.request.values:
-                   abort(400, description="Expected a text to echo back.")
-               return flask.request.values["text"]
+    __plugin_implementation__ = MyBlueprintPlugin()
+    ```
 
-       __plugin_implementation__ = MyBlueprintPlugin()
+    Your blueprint will be published by OctoPrint under the base URL `/plugin/<plugin identifier>/`, so the above
+    example of a plugin with the identifier `myblueprintplugin` would be reachable under
+    `/plugin/myblueprintplugin/echo`.
 
-    Your blueprint will be published by OctoPrint under the base URL ``/plugin/<plugin identifier>/``, so the above
-    example of a plugin with the identifier "myblueprintplugin" would be reachable under
-    ``/plugin/myblueprintplugin/echo``.
+    Just like with regular blueprints you'll be able to create URLs via [`url_for`][flask.url_for], just use the prefix
+    `plugin.<plugin identifier>.<method_name>`, e.g.:
 
-    Just like with regular blueprints you'll be able to create URLs via ``url_for``, just use the prefix
-    ``plugin.<plugin identifier>.<method_name>``, e.g.:
+    ```python
+    # will return "/plugin/myblueprintplugin/echo"
+    flask.url_for("plugin.myblueprintplugin.myEcho")
+    ```
 
-    .. code-block:: python
+    !!! warning
 
-       flask.url_for("plugin.myblueprintplugin.myEcho") # will return "/plugin/myblueprintplugin/echo"
+        As of OctoPrint 1.8.3, endpoints provided through a `BlueprintPlugin` do **not** automatically fall under
+        OctoPrint's [CSRF protection][], for reasons of backwards compatibility. There will be a short grace period before this changes. You
+        can and should however already opt into CSRF protection for your endpoints by implementing `is_blueprint_csrf_protected`
+        and returning `True` from it. You can exempt certain endpoints from CSRF protection by decorating them with
+        `@octoprint.plugin.BlueprintPlugin.csrf_exempt`.
 
-    .. warning::
+        ```python
+        class MyPlugin(octoprint.plugin.BlueprintPlugin):
+            @octoprint.plugin.BlueprintPlugin.route("/hello_world", methods=["GET"])
+            def hello_world(self):
+                # This is a GET request and thus not subject to CSRF protection
+                return "Hello world!"
 
-       As of OctoPrint 1.8.3, endpoints provided through a ``BlueprintPlugin`` do **not** automatically fall under
-       OctoPrint's :ref:`CSRF protection <sec-api-general-csrf>`, for reasons of backwards compatibility. There will be a short grace period before this changes. You
-       can and should however already opt into CSRF protection for your endpoints by implementing ``is_blueprint_csrf_protected``
-       and returning ``True`` from it. You can exempt certain endpoints from CSRF protection by decorating them with
-       ``@octoprint.plugin.BlueprintPlugin.csrf_exempt``.
+            @octoprint.plugin.BlueprintPlugin.route("/hello_you", methods=["POST"])
+            def hello_you(self):
+                # This is a POST request and thus subject to CSRF protection. It is not exempt.
+                return "Hello you!"
 
-       .. code-block:: python
+            @octoprint.plugin.BlueprintPlugin.route("/hello_me", methods=["POST"])
+            @octoprint.plugin.BlueprintPlugin.csrf_exempt()
+            def hello_me(self):
+                # This is a POST request and thus subject to CSRF protection, but this one is exempt.
+                return "Hello me!"
 
-          class MyPlugin(octoprint.plugin.BlueprintPlugin):
-              @octoprint.plugin.BlueprintPlugin.route("/hello_world", methods=["GET"])
-              def hello_world(self):
-                  # This is a GET request and thus not subject to CSRF protection
-                  return "Hello world!"
+            def is_blueprint_csrf_protected(self):
+                return True
+        ```
 
-              @octoprint.plugin.BlueprintPlugin.route("/hello_you", methods=["POST"])
-              def hello_you(self):
-                  # This is a POST request and thus subject to CSRF protection. It is not exempt.
-                  return "Hello you!"
+    `BlueprintPlugin` implements [`RestartNeedingPlugin`][octoprint.plugins.core.RestartNeedingPlugin].
 
-              @octoprint.plugin.BlueprintPlugin.route("/hello_me", methods=["POST"])
-              @octoprint.plugin.BlueprintPlugin.csrf_exempt()
-              def hello_me(self):
-                  # This is a POST request and thus subject to CSRF protection, but this one is exempt.
-                  return "Hello me!"
-
-              def is_blueprint_csrf_protected(self):
-                  return True
-
-    ``BlueprintPlugin`` implements :class:`~octoprint.plugins.core.RestartNeedingPlugin`.
-
-    .. versionchanged:: 1.8.3
+    [[ version_changed 1.8.3 ]]
     """
 
     @staticmethod
     def route(rule, **options):
         """
-        A decorator to mark view methods in your BlueprintPlugin subclass. Works just the same as Flask's
+        A decorator to mark view methods in your BlueprintPlugin subclass. It works just the same as Flask's
         own ``route`` decorator available on blueprints.
 
-        See `the documentation for flask.Blueprint.route <https://flask.palletsprojects.com/api/#flask.Blueprint.route>`_
-        and `the documentation for flask.Flask.route <https://flask.palletsprojects.com/api/#flask.Flask.route>`_ for more
-        information.
+        See [flask.Blueprint.route][] and [flask.Flask.route][] for further information.
         """
 
         from collections import defaultdict
@@ -1479,13 +1427,11 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     def errorhandler(code_or_exception):
         """
         A decorator to mark errorhandlings methods in your BlueprintPlugin subclass. Works just the same as Flask's
-        own ``errorhandler`` decorator available on blueprints.
+        own `@errorhandler` decorator available on blueprints.
 
-        See `the documentation for flask.Blueprint.errorhandler <https://flask.palletsprojects.com/api/#flask.Blueprint.errorhandler>`_
-        and `the documentation for flask.Flask.errorhandler <https://flask.palletsprojects.com/api/#flask.Flask.errorhandler>`_ for more
-        information.
+        See [flask.Blueprint.errorhandler][] and [flask.Flask.errorhandler][] for further information.
 
-        .. versionadded:: 1.3.0
+        [[ version_added 1.3.0 ]]
         """
         from collections import defaultdict
 
@@ -1503,11 +1449,12 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     @staticmethod
     def csrf_exempt():
         """
-        A decorator to mark a view method in your BlueprintPlugin as exempt from :ref:`CSRF protection <sec-api-general-csrf>`. This makes sense
-        if you offer an authenticated API for a certain workflow (see e.g. the bundled appkeys plugin) but in most
+        A decorator to mark a view method in your BlueprintPlugin as exempt from [CSRF protection][].
+
+        This makes sense if you offer an authenticated API for a certain workflow (see e.g. the bundled appkeys plugin) but in most
         cases should not be needed.
 
-        .. versionadded:: 1.8.3
+        [[ version_added 1.8.3 ]]
         """
 
         def decorator(f):
@@ -1524,11 +1471,16 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
     # noinspection PyProtectedMember
     def get_blueprint(self):
         """
-        Creates and returns the blueprint for your plugin. Override this if you want to define and handle your blueprint yourself.
+        Creates and returns the blueprint for your plugin.
+
+        Override this if you want to define and handle your blueprint yourself. Note that the
+        default implementation takes care of attaching rules, error handlers and [CSRF protection][],
+        so if you override this you will need to take care of that yourself.
 
         This method will only be called once during server initialization.
 
-        :return: the blueprint ready to be registered with Flask
+        Returns:
+            (flask.Blueprint): The blueprint for your plugin.
         """
 
         if hasattr(self, "_blueprint"):
@@ -1576,12 +1528,14 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
 
     def get_blueprint_kwargs(self):
         """
-        Override this if you want your blueprint constructed with additional options such as ``static_folder``,
-        ``template_folder``, etc.
+        Returns a dictionary of keyword arguments to pass to the blueprint constructor.
 
-        Defaults to the blueprint's ``static_folder`` and ``template_folder`` to be set to the plugin's basefolder
-        plus ``/static`` or respectively ``/templates``, or -- if the plugin also implements :class:`AssetPlugin` and/or
-        :class:`TemplatePlugin` -- the paths provided by ``get_asset_folder`` and ``get_template_folder`` respectively.
+        Override this if you want your blueprint constructed with additional options such as `static_folder`,
+        `template_folder`, etc.
+
+        Defaults to the blueprint's `static_folder` and ``templae_folder` to be set to the plugin's basefolder
+        plus `/static` or respectively `/templates`, or -- if the plugin also implements `AssetPlugin` and/or
+        `TemplatePlugin` -- the paths provided by `get_asset_folder` and `get_template_folder` respectively.
         """
         import os
 
@@ -1604,23 +1558,23 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
         a session is the default. Note that this only restricts access to the blueprint's dynamic methods, static files
         are always accessible.
 
-        If you want your blueprint's endpoints to have specific permissions, return ``False`` for this and do your
-        permissions checks explicitly.
+        If you want your blueprint's endpoints to have specific permissions, return `False` for this and do your
+        permission checks explicitly.
         """
         return True
 
     # noinspection PyMethodMayBeStatic
     def is_blueprint_csrf_protected(self):
         """
-        Whether a blueprint's endpoints are :ref:`CSRF protected <sec-api-general-csrf>`. For now, this defaults to ``False`` to leave it up to
-        plugins to decide which endpoints *should* be protected. Long term, this will default to ``True`` and hence
-        enforce protection unless a plugin opts out by returning False here.
+        Whether a blueprint's endpoints are [CSRF protected][]. For now, this defaults to `False` to leave it up to
+        plugins to decide which endpoints *should* be protected. Long term, this will default to `True` and hence
+        enforce protection unless a plugin opts out by returning `False` here.
 
         If you do not override this method in your mixin implementation, a warning will be logged to the console
         to alert you of the requirement to make a decision here and to not rely on the default implementation, due to the
         forthcoming change in implemented default behaviour.
 
-        .. versionadded:: 1.8.3
+        [[ version_added 1.8.3 ]]
         """
         self._logger.warning(
             "The Blueprint of this plugin is relying on the default implementation of "
@@ -1637,75 +1591,75 @@ class BlueprintPlugin(OctoPrintPlugin, RestartNeedingPlugin):
         """
         Return all prefixes of your endpoint that are an API that should be containing JSON only.
 
-        Anything that matches this will generate JSON error messages in case of flask.abort
+        Anything that matches this will generate JSON error messages in case of [flask.abort][]
         calls, instead of the default HTML ones.
 
         Defaults to all endpoints under the blueprint. Limit this further as needed. E.g.,
-        if you only want your endpoints /foo, /foo/1 and /bar to be declared as API,
-        return ``["/foo", "/bar"]``. A match will be determined via startswith.
+        if you only want your endpoints `/foo`, `/foo/1` and `/bar` to be declared as API,
+        return `["/foo", "/bar"]`. A match will be determined via [startswith][str.startswith].
         """
         return [""]
 
 
 class SettingsPlugin(OctoPrintPlugin):
     """
-    Including the ``SettingsPlugin`` mixin allows plugins to store and retrieve their own settings within OctoPrint's
+    Including the `SettingsPlugin` mixin allows plugins to store and retrieve their own settings within OctoPrint's
     configuration.
 
-    Plugins including the mixing will get injected an additional property ``self._settings`` which is an instance of
-    :class:`PluginSettingsManager` already properly initialized for use by the plugin. In order for the manager to
-    know about the available settings structure and default values upon initialization, implementing plugins will need
-    to provide a dictionary with the plugin's default settings through overriding the method :func:`get_settings_defaults`.
-    The defined structure will then be available to access through the settings manager available as ``self._settings``.
+    Plugins including the mixin will get injected an additional property `self._settings` which is an instance of
+    [PluginSettings][octoprint.plugin.PluginSettings] already properly initialized for use by the plugin. In order
+    for the PluginSettings instance to know about the available settings structure and default values upon
+    initialization, implementing plugins will need to provide a dictionary with the plugin's default settings through
+    overriding the method `get_settings_defaults`. The defined structure will then be available to access through the
+    settings manager available as `self._settings`.
+
+    !!! warning
+
+        Make sure to protect sensitive information stored by your plugin that only logged in administrators (or users)
+        should have access to via [get_settings_restricted_paths][octoprint.plugin.types.SettingsPlugin.get_settings_restricted_paths].
+        OctoPrint will return its settings on the REST API even to anonymous clients, but will filter out fields it knows are restricted,
+        therefore you **must** make sure that you specify sensitive information accordingly to limit access as required!
 
     If your plugin needs to react to the change of specific configuration values on the fly, e.g. to adjust the log level
     of a logger when the user changes a corresponding flag via the settings dialog, you can override the
-    :func:`on_settings_save` method and wrap the call to the implementation from the parent class with retrieval of the
+    `on_settings_save` method and wrap the call to the implementation from the parent class with retrieval of the
     old and the new value and react accordingly.
 
-    Example:
+    !!! example
 
-    .. code-block:: python
+        ```python
+        import octoprint.plugin
 
-       import octoprint.plugin
+        class MySettingsPlugin(octoprint.plugin.SettingsPlugin, octoprint.plugin.StartupPlugin):
+            def get_settings_defaults(self):
+                return dict(
+                    some_setting="foo",
+                    some_value=23,
+                    sub=dict(
+                        some_flag=True
+                    )
+                )
 
-       class MySettingsPlugin(octoprint.plugin.SettingsPlugin, octoprint.plugin.StartupPlugin):
-           def get_settings_defaults(self):
-               return dict(
-                   some_setting="foo",
-                   some_value=23,
-                   sub=dict(
-                       some_flag=True
-                   )
-               )
+            def on_settings_save(self, data):
+                old_flag = self._settings.get_boolean(["sub", "some_flag"])
 
-           def on_settings_save(self, data):
-               old_flag = self._settings.get_boolean(["sub", "some_flag"])
+                octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
-               octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+                new_flag = self._settings.get_boolean(["sub", "some_flag"])
+                if old_flag != new_flag:
+                    self._logger.info("sub.some_flag changed from {old_flag} to {new_flag}".format(**locals()))
 
-               new_flag = self._settings.get_boolean(["sub", "some_flag"])
-               if old_flag != new_flag:
-                   self._logger.info("sub.some_flag changed from {old_flag} to {new_flag}".format(**locals()))
+            def on_after_startup(self):
+                some_setting = self._settings.get(["some_setting"])
+                some_value = self._settings.get_int(["some_value"])
+                some_flag = self._settings.get_boolean(["sub", "some_flag"])
+                self._logger.info("some_setting = {some_setting}, some_value = {some_value}, sub.some_flag = {some_flag}".format(**locals())
 
-           def on_after_startup(self):
-               some_setting = self._settings.get(["some_setting"])
-               some_value = self._settings.get_int(["some_value"])
-               some_flag = self._settings.get_boolean(["sub", "some_flag"])
-               self._logger.info("some_setting = {some_setting}, some_value = {some_value}, sub.some_flag = {some_flag}".format(**locals())
+        __plugin_implementation__ = MySettingsPlugin()
+        ```
 
-       __plugin_implementation__ = MySettingsPlugin()
-
-    Of course, you are always free to completely override both :func:`on_settings_load` and :func:`on_settings_save` if the
+    Of course, you are always free to completely override both `on_settings_load` and `on_settings_save` if the
     default implementations do not fit your requirements.
-
-
-    .. warning::
-
-       Make sure to protect sensitive information stored by your plugin that only logged in administrators (or users)
-       should have access to via :meth:`~octoprint.plugin.SettingsPlugin.get_settings_restricted_paths`. OctoPrint will
-       return its settings on the REST API even to anonymous clients, but will filter out fields it knows are restricted,
-       therefore you **must** make sure that you specify sensitive information accordingly to limit access as required!
     """
 
     config_version_key = "_config_version"
@@ -1715,32 +1669,34 @@ class SettingsPlugin(OctoPrintPlugin):
     def __init__(self):
         self._settings = None
         """
-        The :class:`~octoprint.plugin.PluginSettings` instance to use for accessing the plugin's settings. Injected by
+        The [PluginSettings][octoprint.plugin.PluginSettings] instance to use for accessing the plugin's settings. Injected by
         the plugin core system upon initialization of the implementation.
         """
 
     def on_settings_load(self):
         """
         Loads the settings for the plugin, called by the Settings API view in order to retrieve all settings from
-        all plugins. Override this if you want to inject additional settings properties that are not stored within
-        OctoPrint's configuration.
+        all plugins.
 
-        .. note::
+        Override this if you want to inject additional settings properties that are not stored within OctoPrint's configuration.
 
-           The default implementation will return your plugin's settings as is, so just in the structure and in the types
-           that are currently stored in OctoPrint's configuration.
+        !!! note
 
-           If you need more granular control here, e.g. over the used data types, you'll need to override this method
-           and iterate yourself over all your settings, using the proper retriever methods on the settings manager
-           to retrieve the data in the correct format.
+            The default implementation will return your plugin's settings as is, so just in the structure and in the types
+            that are currently stored in OctoPrint's configuration.
 
-           The default implementation will also replace any paths that have been restricted by your plugin through
-           :func:`~octoprint.plugin.SettingsPlugin.get_settings_restricted_paths` with either the provided
-           default value (if one was provided), an empty dictionary (as fallback for restricted dictionaries), an
-           empty list (as fallback for restricted lists) or ``None`` values where necessary.
-           Make sure to do your own restriction if you decide to fully overload this method.
+            If you need more granular control here, e.g. over the used data types, you'll need to override this method
+            and iterate yourself over all your settings, using the proper retriever methods on the settings manager
+            to retrieve the data in the correct format.
 
-        :return: the current settings of the plugin, as a dictionary
+            The default implementation will also replace any paths that have been restricted by your plugin through
+            `get_settings_restricted_paths` with either the provided default value (if one was provided), an empty
+            dictionary (as fallback for restricted dictionaries), an empty list (as fallback for restricted lists)
+            or `None` values where necessary. Make sure to do your own restriction if you decide to fully overload
+            this method.
+
+        Returns:
+            (dict): The current settings of the plugin
         """
         import copy
 
@@ -1814,24 +1770,26 @@ class SettingsPlugin(OctoPrintPlugin):
     def on_settings_save(self, data):
         """
         Saves the settings for the plugin, called by the Settings API view in order to persist all settings
-        from all plugins. Override this if you need to directly react to settings changes or want to extract
-        additional settings properties that are not stored within OctoPrint's configuration.
+        from all plugins.
 
-        .. note::
+        Override this if you need to directly react to settings changes or want to extract additional settings
+        properties that are not stored within OctoPrint's configuration.
 
-           The default implementation will persist your plugin's settings as is, so just in the structure and in the
-           types that were received by the Settings API view. Values identical to the default settings values
-           will *not* be persisted.
+        !!! note
 
-           If you need more granular control here, e.g. over the used data types, you'll need to override this method
-           and iterate yourself over all your settings, retrieving them (if set) from the supplied received ``data``
-           and using the proper setter methods on the settings manager to persist the data in the correct format.
+            The default implementation will persist your plugin's settings as is, so just in the structure and in the
+            types that were received by the Settings API view. Values identical to the default settings values
+            will *not* be persisted.
+
+            If you need more granular control here, e.g. over the used data types, you'll need to override this method
+            and iterate yourself over all your settings, retrieving them (if set) from the supplied received `data`
+            and using the proper setter methods on the settings manager to persist the data in the correct format.
 
         Arguments:
             data (dict): The settings dictionary to be saved for the plugin
 
         Returns:
-            dict: The settings that differed from the defaults and were actually saved.
+            (dict): The settings that differed from the defaults and were actually saved.
         """
         import octoprint.util
 
@@ -1867,7 +1825,8 @@ class SettingsPlugin(OctoPrintPlugin):
     # noinspection PyMethodMayBeStatic
     def get_settings_defaults(self):
         """
-        Retrieves the plugin's default settings with which the plugin's settings manager will be initialized.
+        Retrieves the plugin's default settings with which the [PluginSettings][octoprint.plugin.PluginSettings]
+        instance will be initialized.
 
         Override this in your plugin's implementation and return a dictionary defining your settings data structure
         with included default values.
@@ -1882,70 +1841,216 @@ class SettingsPlugin(OctoPrintPlugin):
         Override this in your plugin's implementation to restrict whether a path should only be returned to users with
         certain permissions, or never on the REST API.
 
-        Return a ``dict`` with one of the following keys, mapping to a list of paths (as tuples or lists of
+        Return a `dict` with one of the following keys, mapping to a list of paths (as tuples or lists of
         the path elements) for which to restrict access via the REST API accordingly.
 
-           * An :py:class:`~octoprint.access.permissions.OctoPrintPermission` instance: Paths will only be available on the REST API for users with the permission
-           * ``admin``: Paths will only be available on the REST API for users with admin rights (any user with the SETTINGS permission)
-           * ``user``: Paths will only be available on the REST API when accessed as a logged in user
-           * ``never``: Paths will never be returned on the API
+        - An [OctoPrintPermission][octoprint.access.permissions.OctoPrintPermission] instance: Paths will only be available
+          on the REST API for users with the permission
+        - `admin`: Paths will only be available on the REST API for users with admin rights (any user with the `SETTINGS` permission)
+        - `user`: Paths will only be available on the REST API when accessed as a logged in user
+        - `never`: Paths will never be returned on the REST API
 
-        Example:
+        !!! example
 
-        .. code-block:: python
+            Let's assume we have a plugin that defines the following `get_settings_defaults` and `get_settings_restricted_paths`:
 
-           def get_settings_defaults(self):
-               return dict(some=dict(admin_only=dict(path="path", foo="foo"),
-                                     user_only=dict(path="path", bar="bar")),
-                           another=dict(admin_only=dict(path="path"),
-                                        field="field"),
-                           path=dict(to=dict(never=dict(return="return"))),
-                           the=dict(webcam=dict(data="webcam")))
+            ```python
+            def get_settings_defaults(self):
+                return {
+                    "some": {
+                        "admin_only": {
+                            "path": "path",
+                            "foo": "foo"
+                        },
+                        "user_only": {
+                            "path": "path",
+                            "bar": "bar"
+                        }
+                    },
+                    "another": {
+                        "admin_only": {
+                            "path": "path"
+                        },
+                        "field": "field"
+                    },
+                    "path": {
+                        "to": {
+                            "never": {
+                                "return": "return"
+                            }
+                        }
+                    },
+                    "the": {
+                        "webcam": {
+                            "data": "webcam"
+                        }
+                    }
+                }
 
-           def get_settings_restricted_paths(self):
-               from octoprint.access.permissions import Permissions
-               return {'admin':[["some", "admin_only", "path"], ["another", "admin_only", "path"],],
-                       'user':[["some", "user_only", "path"],],
-                       'never':[["path", "to", "never", "return"],],
-                       Permissions.WEBCAM:[["the", "webcam", "data"],]}
+            def get_settings_restricted_paths(self):
+                from octoprint.access.permissions import Permissions
 
-           # this will make the plugin return settings on the REST API like this for an anonymous user
-           #
-           #     dict(some=dict(admin_only=dict(path=None, foo="foo"),
-           #                    user_only=dict(path=None, bar="bar")),
-           #          another=dict(admin_only=dict(path=None),
-           #                       field="field"),
-           #          path=dict(to=dict(never=dict(return=None))),
-           #          the=dict(webcam=dict(data=None)))
-           #
-           # like this for a logged in user without the webcam permission
-           #
-           #     dict(some=dict(admin_only=dict(path=None, foo="foo"),
-           #                    user_only=dict(path="path", bar="bar")),
-           #          another=dict(admin_only=dict(path=None),
-           #                       field="field"),
-           #          path=dict(to=dict(never=dict(return=None))),
-           #          the=dict(webcam=dict(data=None)))
-           #
-           # like this for a logged in user with the webcam permission
-           #
-           #     dict(some=dict(admin_only=dict(path=None, foo="foo"),
-           #                    user_only=dict(path="path", bar="bar")),
-           #          another=dict(admin_only=dict(path=None),
-           #                       field="field"),
-           #          path=dict(to=dict(never=dict(return=None))),
-           #          the=dict(webcam=dict(data="webcam")))
-           #
-           # and like this for an admin user
-           #
-           #     dict(some=dict(admin_only=dict(path="path", foo="foo"),
-           #                    user_only=dict(path="path", bar="bar")),
-           #          another=dict(admin_only=dict(path="path"),
-           #                       field="field"),
-           #          path=dict(to=dict(never=dict(return=None))),
-           #          the=dict(webcam=dict(data="webcam")))
+                return {
+                    "admin": [
+                        ["some", "admin_only", "path"],
+                        ["another", "admin_only", "path"],
+                    ],
+                    "user": [
+                        ["some", "user_only", "path"],
+                    ],
+                    "never": [
+                        ["path", "to", "never", "return"],
+                    ],
+                    Permissions.WEBCAM: [
+                        ["the", "webcam", "data"],
+                    ]
+                }
+            ```
 
-        .. versionadded:: 1.2.17
+            Here's what an anonymous user, a user *without* the webcam permission, a user *with* the webcam permission and an admin user would get
+            when accessing the plugin's settings on the REST API:
+
+            === "Anonymous"
+
+                ```json
+                {
+                    "some": {
+                        "admin_only": {
+                            "path": null,
+                            "foo": "foo"
+                        },
+                        "user_only": {
+                            "path": null,
+                            "bar": "bar"
+                        }
+                    },
+                    "another": {
+                        "admin_only": {
+                            "path": null
+                        },
+                        "field": "field"
+                    },
+                    "path": {
+                        "to": {
+                            "never": {
+                                "return": null
+                            }
+                        }
+                    },
+                    "the": {
+                        "webcam": {
+                            "data": null
+                        }
+                    }
+                }
+                ```
+
+            === "No webcam permission"
+
+                ```json
+                {
+                    "some": {
+                        "admin_only": {
+                            "path": null,
+                            "foo": "foo"
+                        },
+                        "user_only": {
+                            "path": "path",
+                            "bar": "bar"
+                        }
+                    },
+                    "another": {
+                        "admin_only": {
+                            "path": null
+                        },
+                        "field": "field"
+                    },
+                    "path": {
+                        "to": {
+                            "never": {
+                                "return": null
+                            }
+                        }
+                    },
+                    "the": {
+                        "webcam": {
+                            "data": null
+                        }
+                    }
+                }
+                ```
+
+            === "Webcam permission"
+
+                ```json
+                {
+                    "some": {
+                        "admin_only": {
+                            "path": null,
+                            "foo": "foo"
+                        },
+                        "user_only": {
+                            "path": "path",
+                            "bar": "bar"
+                        }
+                    },
+                    "another": {
+                        "admin_only": {
+                            "path": null
+                        },
+                        "field": "field"
+                    },
+                    "path": {
+                        "to": {
+                            "never": {
+                                "return": null
+                            }
+                        }
+                    },
+                    "the": {
+                        "webcam": {
+                            "data": "webcam"
+                        }
+                    }
+                }
+                ```
+
+            === "Admin"
+
+                ```json
+                {
+                    "some": {
+                        "admin_only": {
+                            "path": "path",
+                            "foo": "foo"
+                        },
+                        "user_only": {
+                            "path": "path",
+                            "bar": "bar"
+                        }
+                    },
+                    "another": {
+                        "admin_only": {
+                            "path": "path"
+                        },
+                        "field": "field"
+                    },
+                    "path": {
+                        "to": {
+                            "never": {
+                                "return": "return"
+                            }
+                        }
+                    },
+                    "the": {
+                        "webcam": {
+                            "data": "webcam"
+                        }
+                    }
+                }
+                ```
+
+        [[ version_added 1.2.17 ]]
         """
         return {}
 
@@ -1959,31 +2064,41 @@ class SettingsPlugin(OctoPrintPlugin):
         (hierarchically) to a transform function which will get the value to transform as only input and should return
         the transformed value.
 
-        Example:
+        !!! example
 
-        .. code-block:: python
+            ```python
+            def get_settings_defaults(self):
+                return {
+                    "some_key": "Some_Value",
+                    "some_other_key": "Some_Value"
+                }
 
-           def get_settings_defaults(self):
-               return dict(some_key="Some_Value", some_other_key="Some_Value")
+            def get_settings_preprocessors(self):
+                getter_preprocessors = {
+                    "some_key": lambda x: x.upper(),
+                }
 
-           def get_settings_preprocessors(self):
-               return dict(some_key=lambda x: x.upper()),        # getter preprocessors
-                      dict(some_other_key=lambda x: x.lower())   # setter preprocessors
+                setter_preprocessors = {
+                    "some_other_key": lambda x: x.lower()
+                }
 
-           def some_method(self):
-               # getting the value for "some_key" should turn it to upper case
-               assert self._settings.get(["some_key"]) == "SOME_VALUE"
+                return getter_preprocessors, setter_preprocessors
 
-               # the value for "some_other_key" should be left alone
-               assert self._settings.get(["some_other_key"] = "Some_Value"
+            def some_method(self):
+                # getting the value for "some_key" should turn it to upper case
+                assert self._settings.get(["some_key"]) == "SOME_VALUE"
 
-               # setting a value for "some_other_key" should cause the value to first be turned to lower case
-               self._settings.set(["some_other_key"], "SOME_OTHER_VALUE")
-               assert self._settings.get(["some_other_key"]) == "some_other_value"
+                # the value for "some_other_key" should be left alone
+                assert self._settings.get(["some_other_key"] = "Some_Value"
+
+                # setting a value for "some_other_key" should cause the value to first be turned to lower case
+                self._settings.set(["some_other_key"], "SOME_OTHER_VALUE")
+                assert self._settings.get(["some_other_key"]) == "some_other_value"
+            ```
 
         Returns:
-            (dict, dict): A tuple consisting of two dictionaries, the first being the plugin's preprocessors for
-            getters, the second the preprocessors for setters
+            (tuple): A tuple consisting of two dictionaries, the first being the plugin's preprocessors for
+                getters, the second the preprocessors for setters
         """
         return {}, {}
 
@@ -1996,9 +2111,9 @@ class SettingsPlugin(OctoPrintPlugin):
         config.yaml.
 
         Returns:
-            int or None: an int signifying the current settings format, should be incremented by plugins whenever there
-            are backwards incompatible changes. Returning None here disables the version tracking for the
-            plugin's configuration.
+            (int | None): an int signifying the current settings format, should be incremented by plugins whenever there
+                are backwards incompatible changes. Returning None here disables the version tracking for the
+                plugin's configuration.
         """
         return None
 
@@ -2006,27 +2121,27 @@ class SettingsPlugin(OctoPrintPlugin):
     def on_settings_migrate(self, target, current):
         """
         Called by OctoPrint if it detects that the installed version of the plugin necessitates a higher settings version
-        than the one currently stored in _config.yaml. Will also be called if the settings data stored in config.yaml
-        doesn't have version information, in which case the ``current`` parameter will be None.
+        than the one currently stored in `config.yaml`. Will also be called if the settings data stored in `config.yaml`
+        doesn't have version information, in which case the `current` parameter will be `None`.
 
-        Your plugin's implementation should take care of migrating any data by utilizing self._settings. OctoPrint
+        Your plugin's implementation should take care of migrating any data by utilizing `self._settings`. OctoPrint
         will take care of saving any changes to disk by calling `self._settings.save()` after returning from this method.
 
-        This method will be called before your plugin's :func:`on_settings_initialized` method, with all injections already
+        This method will be called before your plugin's `on_settings_initialized` method, with all injections already
         having taken place. You can therefore depend on the configuration having been migrated by the time
-        :func:`on_settings_initialized` is called.
+        `on_settings_initialized` is called.
 
         Arguments:
             target (int): The settings format version the plugin requires, this should always be the same value as
-                          returned by :func:`get_settings_version`.
-            current (int or None): The settings format version as currently stored in config.yaml. May be None if
-                          no version information can be found.
+                returned by `get_settings_version`.
+            current (int | None): The settings format version as currently stored in config.yaml. May be None if
+                no version information can be found.
         """
         pass
 
     def on_settings_cleanup(self):
         """
-        Called after migration and initialization but before call to :func:`on_settings_initialized`.
+        Called after migration and initialization but before call to `on_settings_initialized`.
 
         Plugins may overwrite this method to perform additional clean up tasks.
 
@@ -2034,7 +2149,7 @@ class SettingsPlugin(OctoPrintPlugin):
         the differences to the defaults (in case the current data was persisted with an older
         version of OctoPrint that still duplicated default data).
 
-        .. versionadded:: 1.3.0
+        [[ version_added 1.3.0 ]]
         """
         import octoprint.util
         from octoprint.settings import NoSuchSettingsPath
@@ -2074,7 +2189,7 @@ class SettingsPlugin(OctoPrintPlugin):
     def on_settings_initialized(self):
         """
         Called after the settings have been initialized and - if necessary - also been migrated through a call to
-        func:`on_settings_migrate`.
+        `on_settings_migrate`.
 
         This method will always be called after the `initialize` method.
         """
@@ -2083,9 +2198,12 @@ class SettingsPlugin(OctoPrintPlugin):
 
 class EventHandlerPlugin(OctoPrintPlugin):
     """
-    The ``EventHandlerPlugin`` mixin allows OctoPrint plugins to react to any of :ref:`OctoPrint's events <sec-events>`.
-    OctoPrint will call the :func:`on_event` method for any event fired on its internal event bus, supplying the
-    event type and the associated payload. Please note that until your plugin returns from that method, further event
+    The `EventHandlerPlugin` mixin allows OctoPrint plugins to react to any of [OctoPrint's events][dev-guide.events].
+
+    OctoPrint will call the `on_event` method for any event fired on its internal event bus, supplying the
+    event type and the associated payload.
+
+    Please note that until your plugin returns from that method, further event
     processing within OctoPrint will block - the event queue itself is run asynchronously from the rest of OctoPrint,
     but the processing of the events within the queue itself happens consecutively.
 
@@ -2098,9 +2216,9 @@ class EventHandlerPlugin(OctoPrintPlugin):
         """
         Called by OctoPrint upon processing of a fired event on the platform.
 
-        .. warning::
+        !!! warning
 
-           Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
+            Do not perform long-running or even blocking operations in your implementation or you **will** block and break the server.
 
         Arguments:
             event (str): The type of event that got fired, see :ref:`the list of events <sec-events-available_events>`
@@ -2112,49 +2230,61 @@ class EventHandlerPlugin(OctoPrintPlugin):
 
 class SlicerPlugin(OctoPrintPlugin):
     """
-    Via the ``SlicerPlugin`` mixin plugins can add support for slicing engines to be used by OctoPrint.
-
+    Using the `SlicerPlugin` mixin, plugins can add support for slicing engines to be used by OctoPrint.
     """
 
     # noinspection PyMethodMayBeStatic
     def is_slicer_configured(self):
         """
-        Unless the return value of this method is ``True``, OctoPrint will not register the slicer within the slicing
+        Reports whether the slicer is properly configured and ready to be used.
+
+        Unless the return value of this method is `True`, OctoPrint will not register the slicer within the slicing
         sub system upon startup. Plugins may use this to do some start up checks to verify that e.g. the path to
         a slicing binary as set and the binary is executable, or credentials of a cloud slicing platform are properly
         entered etc.
+
+        Returns:
+            (bool): Whether the slicer is properly configured and ready to be used.
         """
         return False
 
     # noinspection PyMethodMayBeStatic
     def get_slicer_properties(self):
         """
-        Plugins should override this method to return a ``dict`` containing a bunch of meta data about the implemented slicer.
+        Returns the properties of the slicer.
 
-        The expected keys in the returned ``dict`` have the following meaning:
+        Plugins should override this method to return a `dict` containing a bunch of meta data about the implemented slicer.
 
-        type
-            The type identifier to use for the slicer. This should be a short unique lower case string which will be
+        The expected keys in the returned `dict` are the following:
+
+        `type`
+        :   The type identifier to use for the slicer. This should be a short unique lower case string which will be
             used to store slicer profiles under or refer to the slicer programmatically or from the API.
-        name
-            The human readable name of the slicer. This will be displayed to the user during slicer selection.
-        same_device
-            True if the slicer runs on the same device as OctoPrint, False otherwise. Slicers running on the same
+
+        `name`
+        :   The human readable name of the slicer. This will be displayed to the user during slicer selection.
+
+        `same_device`
+        :   `True` if the slicer runs on the same device as OctoPrint, `False` otherwise. Slicers running on the same
             device will not be allowed to slice on systems with less than two CPU cores (or an unknown number) while a
             print is running due to performance reasons. Slice requests against slicers running on the same device and
             less than two cores will result in an error.
-        progress_report
-            ``True`` if the slicer can report back slicing progress to OctoPrint ``False`` otherwise.
-        source_file_types
-            A list of file types this slicer supports as valid origin file types. These are file types as found in the
-            paths within the extension tree. Plugins may add additional file types through the :ref:`sec-plugins-hook-filemanager-extensiontree` hook.
-            The system will test source files contains in incoming slicing requests via :meth:`octoprint.filemanager.valid_file_type` against the
-            targeted slicer's ``source_file_types``.
-        destination_extension
-            The possible extensions of slicing result files.
+
+        `progress_report`
+        :   `True` if the slicer can report back slicing progress to OctoPrint `False` otherwise.
+
+        `source_file_types`
+        :   A list of file types this slicer supports as valid origin file types. These are file types as found in the
+            paths within the extension tree. Plugins may add additional file types through the
+            [octoprint.filemanager.extension_tree][plugin-guide.hooks.octoprint-filemanager-extension_tree] hook.
+            The system will test source files contains in incoming slicing requests using
+            [octoprint.filemanager.valid_file_type][] against the targeted slicer's `source_file_types`.
+
+        `destination_extensions`
+        :   The possible extensions of slicing result files.
 
         Returns:
-            dict: A dict describing the slicer as outlined above.
+            (dict): A dict containing the slicer's properties as outlined above.
         """
         return {
             "type": None,
@@ -2170,14 +2300,16 @@ class SlicerPlugin(OctoPrintPlugin):
         """
         Fetch additional entries to put into the extension tree for accepted files
 
-        By default, a subtree for ``model`` files with ``stl`` extension is returned. Slicers who want to support
+        By default, a subtree for `model` files with `stl` extension is returned. Slicer plugins which want to support
         additional/other file types will want to override this.
 
-        For the extension tree format, take a look at the docs of the :ref:`octoprint.filemanager.extension_tree hook <sec-plugins-hook-filemanager-extensiontree>`.
+        For the extension tree format, take a look at the docs of the
+        [octoprint.filemanager.extension_tree hook][plugin-guide.hooks.octoprint-filemanager-extension_tree].
 
-        Returns: (dict) a dictionary containing a valid extension subtree.
+        Returns:
+            (dict): a dictionary containing a valid extension subtree.
 
-        .. versionadded:: 1.3.11
+        [[ version_added 1.3.11 ]]
         """
         from octoprint.filemanager import ContentTypeMapping
 
@@ -2185,16 +2317,16 @@ class SlicerPlugin(OctoPrintPlugin):
 
     def get_slicer_profiles(self, profile_path):
         """
-        Fetch all :class:`~octoprint.slicing.SlicingProfile` stored for this slicer.
+        Fetch all [SlicingProfile][octoprint.slicing.SlicingProfile]s stored for this slicer.
 
         For compatibility reasons with existing slicing plugins this method defaults to returning profiles parsed from
-        .profile files in the plugin's ``profile_path``, utilizing the :func:`SlicingPlugin.get_slicer_profile` method
+        `.profile` files in the plugin's `profile_path`, utilizing the `get_slicer_profile` method
         of the plugin implementation.
 
         Arguments:
             profile_path (str): The base folder where OctoPrint stores this slicer plugin's profiles
 
-        .. versionadded:: 1.3.7
+        [[ version_added 1.3.7 ]]
         """
 
         from os import scandir
@@ -2216,7 +2348,9 @@ class SlicerPlugin(OctoPrintPlugin):
     # noinspection PyMethodMayBeStatic
     def get_slicer_profiles_lastmodified(self, profile_path):
         """
-        .. versionadded:: 1.3.0
+        Fetch the last modification timestamp of the slicer's profiles.
+
+        [[ version_added 1.3.0 ]]
         """
         import os
 
@@ -2231,43 +2365,46 @@ class SlicerPlugin(OctoPrintPlugin):
     # noinspection PyMethodMayBeStatic
     def get_slicer_default_profile(self):
         """
-        Should return a :class:`~octoprint.slicing.SlicingProfile` containing the default slicing profile to use with
+        Should return a [SlicingProfile][octoprint.slicing.SlicingProfile] containing the default slicing profile to use with
         this slicer if no other profile has been selected.
 
         Returns:
-            SlicingProfile: The :class:`~octoprint.slicing.SlicingProfile` containing the default slicing profile for
-                this slicer.
+            (octoprint.slicing.SlicingProfile): The default `SlicingProfile` for the slicer.
         """
         return None
 
     # noinspection PyMethodMayBeStatic
     def get_slicer_profile(self, path):
         """
-        Should return a :class:`~octoprint.slicing.SlicingProfile` parsed from the slicing profile stored at the
-        indicated ``path``.
+        Should return a [SlicingProfile][octoprint.slicing.SlicingProfile] parsed from the slicing profile stored at the
+        indicated `path`.
 
         Arguments:
             path (str): The absolute path from which to read the slicing profile.
 
         Returns:
-            SlicingProfile: The specified slicing profile.
+            (octoprint.slicing.SlicingProfile): The specified slicing profile.
         """
         return None
 
     # noinspection PyMethodMayBeStatic
     def save_slicer_profile(self, path, profile, allow_overwrite=True, overrides=None):
         """
-        Should save the provided :class:`~octoprint.slicing.SlicingProfile` to the indicated ``path``, after applying
-        any supplied ``overrides``. If a profile is already saved under the indicated path and ``allow_overwrite`` is
-        set to False (defaults to True), an :class:`IOError` should be raised.
+        Should save the provided [SlicingProfile][octoprint.slicing.SlicingProfile] to the
+        indicated `path`, after applying any supplied `overrides`.
+
+        If a profile is already saved under the indicated path and `allow_overwrite` is
+        set to `False` (defaults to `True`), an [IOError][] should be raised.
 
         Arguments:
             path (str): The absolute path to which to save the profile.
-            profile (SlicingProfile): The profile to save.
-            allow_overwrite (boolean): Whether to allow to overwrite an existing profile at the indicated path (True,
-                default) or not (False). If a profile already exists on the path and this is False an
-                :class:`IOError` should be raised.
-            overrides (dict): Profile overrides to apply to the ``profile`` before saving it
+            profile (octoprint.slicing.SlicingProfile): The profile to save.
+            allow_overwrite (bool): Whether to allow to overwrite an existing profile at the indicated path (`True`,
+                default) or not (`False`).
+            overrides (dict): Profile overrides to apply to the `profile` before saving it
+
+        Raises:
+            IOError: If a profile already exists on the path and `allow_overwrite` is `False`.
         """
         pass
 
@@ -2284,57 +2421,58 @@ class SlicerPlugin(OctoPrintPlugin):
         on_progress_kwargs=None,
     ):
         """
-        Called by OctoPrint to slice ``model_path`` for the indicated ``printer_profile``. If the ``machinecode_path`` is ``None``,
-        slicer implementations should generate it from the provided ``model_path``.
+        Called by OctoPrint to slice `model_path` for the indicated `printer_profile`.
 
-        If provided, the ``profile_path`` is guaranteed by OctoPrint to be a serialized slicing profile created through the slicing
-        plugin's own :func:`save_slicer_profile` method.
+        If the `machinecode_path` is `None`, slicer implementations should generate it from the provided `model_path`.
 
-        If provided, ``position`` will be a ``dict`` containing and ``x`` and a ``y`` key, indicating the position
+        If provided, the `profile_path` is guaranteed by OctoPrint to be a serialized slicing profile created through the slicing
+        plugin's own `save_slicer_profile` method.
+
+        If provided, `position` will be a `dict` containing and `x` and a `y` key, indicating the position
         the center of the model on the print bed should have in the final sliced machine code. If not provided, slicer
         implementations should place the model in the center of the print bed.
 
-        ``on_progress`` will be a callback which expects an additional keyword argument ``_progress`` with the current
+        `on_progress` will be a callback which expects an additional keyword argument `_progress` with the current
         slicing progress which - if progress reporting is supported - the slicing plugin should call like the following:
 
-        .. code-block:: python
+        ```python
+        if on_progress is not None:
+            if on_progress_args is None:
+                on_progress_args = ()
+            if on_progress_kwargs is None:
+                on_progress_kwargs = dict()
 
-           if on_progress is not None:
-               if on_progress_args is None:
-                   on_progress_args = ()
-               if on_progress_kwargs is None:
-                   on_progress_kwargs = dict()
+            on_progress_kwargs["_progress"] = your_plugins_slicing_progress
+            on_progress(*on_progress_args, **on_progress_kwargs)
+        ```
 
-               on_progress_kwargs["_progress"] = your_plugins_slicing_progress
-               on_progress(*on_progress_args, **on_progress_kwargs)
-
-        Please note that both ``on_progress_args`` and ``on_progress_kwargs`` as supplied by OctoPrint might be ``None``,
+        Please note that both `on_progress_args` and `on_progress_kwargs` as supplied by OctoPrint might be `None`,
         so always make sure to initialize those values to sane defaults like depicted above before invoking the callback.
 
-        In order to support external cancellation of an ongoing slicing job via :func:`cancel_slicing`, implementations
-        should make sure to track the started jobs via the ``machinecode_path``, if provided.
+        In order to support external cancellation of an ongoing slicing job via `cancel_slicing`, implementations
+        should make sure to track the started jobs via the `machinecode_path`, if provided.
 
-        The method should return a 2-tuple consisting of a boolean ``flag`` indicating whether the slicing job was
-        finished successfully (True) or not (False) and a ``result`` depending on the success of the slicing job.
+        The method should return a 2-tuple consisting of a boolean `flag` indicating whether the slicing job was
+        finished successfully (`True`) or not (`False`) and a `result` depending on the success of the slicing job.
 
-        For jobs that finished successfully, ``result`` should be a :class:`dict` containing additional information
+        For jobs that finished successfully, `result` should be a [dict][] containing additional information
         about the slicing job under the following keys:
 
-        analysis
-            Analysis result of the generated machine code as returned by the slicer itself. This should match the
+        `analysis`
+        :   Analysis result of the generated machine code as returned by the slicer itself. This should match the
             data structure described for the analysis queue of the matching machine code format, e.g.
-            :class:`~octoprint.filemanager.analysis.GcodeAnalysisQueue` for GCODE files.
+            [GcodeAnalysisQueue][octoprint.filemanager.analysis.GcodeAnalysisQueue] for GCODE files.
 
-        For jobs that did not finish successfully (but not due to being cancelled!), ``result`` should be a :class:`str`
+        For jobs that did not finish successfully (but not due to being cancelled!), `result` should be a [str][]
         containing a human readable reason for the error.
 
-        If the job gets cancelled, a :class:`~octoprint.slicing.SlicingCancelled` exception should be raised.
+        If the job gets cancelled, a [octoprint.slicing.SlicingCancelled][] exception should be raised.
 
         Returns:
-            tuple: A 2-tuple (boolean, object) as outlined above.
+            (tuple): A 2-tuple (bool, object) as outlined above.
 
         Raises:
-            SlicingCancelled: The slicing job was cancelled (via :meth:`cancel_slicing`).
+            octoprint.slicing.SlicingCancelled: The slicing job was cancelled (via `cancel_slicing`).
         """
         pass
 
@@ -2351,7 +2489,7 @@ class SlicerPlugin(OctoPrintPlugin):
 
 class ProgressPlugin(OctoPrintPlugin):
     """
-    Via the ``ProgressPlugin`` mixing plugins can let themselves be called upon progress in print jobs or slicing jobs,
+    Using the `ProgressPlugin` mixin, plugins can let themselves be called upon progress in print jobs or slicing jobs,
     limited to minimally 1% steps.
     """
 
@@ -2360,9 +2498,10 @@ class ProgressPlugin(OctoPrintPlugin):
         """
         Called by OctoPrint on minimally 1% increments during a running print job.
 
-        :param string storage:  Location of the file
-        :param string path:     Path of the file
-        :param int progress:    Current progress as a value between 0 and 100
+        Arguments:
+            storage (str): The storage location of the file being printed.
+            path (str): The path of the file being printed.
+            progress (int): The current progress as a value between 0 and 100.
         """
         pass
 
@@ -2379,21 +2518,24 @@ class ProgressPlugin(OctoPrintPlugin):
         """
         Called by OctoPrint on minimally 1% increments during a running slicing job.
 
-        :param string slicer:               Key of the slicer reporting the progress
-        :param string source_location:      Location of the source file
-        :param string source_path:          Path of the source file
-        :param string destination_location: Location the destination file
-        :param string destination_path:     Path of the destination file
-        :param int progress:                Current progress as a value between 0 and 100
+        Arguments:
+            slicer (str): Identifier of the slicer reporting the progress
+            source_location (str): Location of the source file
+            source_path (str): Path of the source file
+            destination_location (str): Location the destination file
+            destination_path (str): Path of the destination file
+            progress (int): The current progress as a value between 0 and 100.
         """
         pass
 
 
 class WebcamProviderPlugin(OctoPrintPlugin):
     """
-    The ``WebcamProviderPlugin`` can be used to provide one or more webcams visible on the frontend and used for snapshots/timelapses.
+    The `WebcamProviderPlugin` can be used to provide one or more webcams visible on the
+    frontend and used for snapshots/timelapses.
 
-    For an example of how to utilize this, see the bundled ``classicwebcam`` plugin, or the ``testpicture`` plugin available `here <https://github.com/OctoPrint/OctoPrint-Testpicture>`_.
+    For an example of how to utilize this, see the bundled `classicwebcam` plugin, or the
+    `testpicture` plugin available [here](https://github.com/OctoPrint/OctoPrint-Testpicture).
     """
 
     def get_webcam_configurations(self):
@@ -2401,18 +2543,21 @@ class WebcamProviderPlugin(OctoPrintPlugin):
         Used to retrieve a list of available webcams
 
         Returns:
-            A list of :class:`~octoprint.schema.webcam.Webcam`: The available webcams, can be empty if none available.
+            (list): The available webcams as a list of [octoprint.schema.webcam.Webcam][],
+                can be empty if none available.
         """
 
         return []
 
-    def take_webcam_snapshot(self, webcamName):
+    def take_webcam_snapshot(self, webcam):
         """
-        Used to take a JPEG snapshot of the webcam. This method may raise an exception, you can expect failures to be handled.
+        Used to take a JPEG snapshot of the webcam. This method may raise an exception,
+        you can expect failures to be handled.
 
-         :param string webcamName: The name of the webcam to take a snapshot of as given by the configurations
+        Arguments:
+            webcam (str): The name of the webcam to take a snapshot of as given by the configurations
 
         Returns:
-            An iterator over bytes of the JPEG image
+            (iterator): An iterator over bytes of the JPEG image
         """
         raise NotImplementedError()
