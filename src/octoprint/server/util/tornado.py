@@ -564,7 +564,7 @@ class UploadStorageFallbackHandler(RequestlessExceptionLoggingMixin, CorsSupport
                 self._new_body += value + b"\r\n"
         self._new_body += b"--%s--\r\n" % self._multipart_boundary
 
-    def _handle_method(self, *args, **kwargs):
+    async def _handle_method(self, *args, **kwargs):
         """
         Takes care of defining the new request body if necessary and forwarding
         the current request and changed body to the ``fallback``.
@@ -588,11 +588,11 @@ class UploadStorageFallbackHandler(RequestlessExceptionLoggingMixin, CorsSupport
 
         try:
             # call the configured fallback with request and body to use
-            future = self._fallback(self.request, body)
-            if future is not None and isinstance(future, tornado.concurrent.Future):
-                future.add_done_callback(self._cleanup_files)
-            self._headers_written = True
-        except Exception:
+            result = self._fallback(self.request, body)
+            if result is not None:
+                await result
+            # self._headers_written = True
+        finally:
             # make sure the temporary files are removed again
             self._cleanup_files()
 

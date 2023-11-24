@@ -1026,7 +1026,9 @@ class Server:
                 {
                     "fallback": util.tornado.WsgiInputContainer(
                         app.wsgi_app,
-                        executor=ThreadPoolExecutor(),
+                        executor=ThreadPoolExecutor(
+                            thread_name_prefix="WsgiRequestHandler"
+                        ),
                         headers=headers,
                         removed_headers=removed_headers,
                     ),
