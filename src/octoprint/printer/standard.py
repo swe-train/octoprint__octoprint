@@ -14,6 +14,7 @@ import time
 
 from frozendict import frozendict
 
+import octoprint.schema.printer as schema
 import octoprint.util.json
 from octoprint import util as util
 from octoprint.events import Events, eventManager
@@ -45,12 +46,6 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
         self._logger = logging.getLogger(__name__)
         self._logger_job = logging.getLogger(f"{__name__}.job")
-
-        self._dict = (
-            frozendict
-            if settings().getBoolean(["devel", "useFrozenDictForPrinterState"])
-            else dict
-        )
 
         self._analysisQueue = analysisQueue
         self._fileManager = fileManager
@@ -132,28 +127,11 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             on_get_resends=self._updateResendDataCallback,
         )
         self._stateMonitor.reset(
-            state=self._dict(
+            schema.PrinterState(
                 text=self.get_state_string(),
                 flags=self._getStateFlags(),
                 error=self.get_error(),
-            ),
-            job_data=self._dict(
-                file=self._dict(name=None, path=None, size=None, origin=None, date=None),
-                estimatedPrintTime=None,
-                lastPrintTime=None,
-                filament=self._dict(length=None, volume=None),
-                user=None,
-            ),
-            progress=self._dict(
-                completion=None,
-                filepos=None,
-                printTime=None,
-                printTimeLeft=None,
-                printTimeOrigin=None,
-            ),
-            current_z=None,
-            offsets=self._dict(),
-            resends=self._dict(count=0, ratio=0),
+            )
         )
 
         eventManager().subscribe(
@@ -823,11 +801,11 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             return self._comm.getErrorString()
 
     def get_current_data(self, *args, **kwargs):
-        return util.thaw_frozendict(self._stateMonitor.get_current_data())
+        return self._stateMonitor.get_current_data()
 
     def get_current_job(self, *args, **kwargs):
         currentData = self._stateMonitor.get_current_data()
-        return util.thaw_frozendict(currentData["job"])
+        return currentData["job"]
 
     def get_current_temperatures(self, *args, **kwargs):
         if self._comm is not None:
@@ -1068,7 +1046,9 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
         self._state = state
         self._stateMonitor.set_state(
-            self._dict(text=state_string, flags=self._getStateFlags(), error=error_string)
+            schema.PrinterState(
+                text=state_string, flags=self._getStateFlags(), error=error_string
+            )
         )
 
         payload = {
@@ -1094,7 +1074,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
         printTimeLeftOrigin=None,
     ):
         self._stateMonitor.set_progress(
-            self._dict(
+            schema.JobProgress(
                 completion=int(completion * 100) if completion is not None else None,
                 filepos=filepos,
                 printTime=int(printTime) if printTime is not None else None,
@@ -1103,7 +1083,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             )
         )
 
-    def _updateProgressDataCallback(self):
+    def _updateProgressDataCallback(self) -> schema.JobProgress:
         if self._comm is None:
             progress = None
             filepos = None
@@ -1160,7 +1140,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
                         f"Error while estimating print time via {estimator}"
                     )
 
-        return self._dict(
+        return schema.JobProgress(
             completion=progress * 100 if progress is not None else None,
             filepos=filepos,
             printTime=int(printTime) if printTime is not None else None,
@@ -1168,10 +1148,10 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             printTimeLeftOrigin=printTimeLeftOrigin,
         )
 
-    def _updateResendDataCallback(self):
+    def _updateResendDataCallback(self) -> schema.ResendInfo:
         if not self._comm:
-            return self._dict(count=0, transmitted=0, ratio=0)
-        return self._dict(
+            return schema.ResendInfo()
+        return schema.ResendInfo(
             count=self._comm.received_resends,
             transmitted=self._comm.transmitted_lines,
             ratio=int(self._comm.resend_ratio * 100),
@@ -1185,19 +1165,17 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
         data = {"time": int(time.time())}
         for tool in tools.keys():
-            data["tool%d" % tool] = self._dict(
-                actual=tools[tool][0], target=tools[tool][1]
-            )
+            data["tool%d" % tool] = {"actual": tools[tool][0], "target": tools[tool][1]}
         if bed is not None and isinstance(bed, tuple):
-            data["bed"] = self._dict(actual=bed[0], target=bed[1])
+            data["bed"] = {"actual": bed[0], "target": bed[1]}
         if chamber is not None and isinstance(chamber, tuple):
-            data["chamber"] = self._dict(actual=chamber[0], target=chamber[1])
+            data["chamber"] = {"actual": chamber[0], "target": chamber[1]}
         for identifier, values in custom.items():
-            data[identifier] = self._dict(actual=values[0], target=values[1])
+            data[identifier] = {"actual": values[0], "target": values[1]}
 
         self._temps.append(data)
 
-        self._stateMonitor.add_temperature(self._dict(**data))
+        self._stateMonitor.add_temperature(data)
 
     def _validateJob(self, filename, sd):
         if not valid_file_type(filename, type="machinecode"):
@@ -1248,23 +1226,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
                 }
             else:
                 self._selectedFile = None
-                self._stateMonitor.set_job_data(
-                    self._dict(
-                        file=self._dict(
-                            name=None,
-                            path=None,
-                            display=None,
-                            origin=None,
-                            size=None,
-                            date=None,
-                        ),
-                        estimatedPrintTime=None,
-                        averagePrintTime=None,
-                        lastPrintTime=None,
-                        filament=None,
-                        user=None,
-                    )
-                )
+                self._stateMonitor.set_job_data(schema.JobData())
                 return
 
             estimatedPrintTime = None
@@ -1329,8 +1291,8 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
                 date = data.timestamp
 
             self._stateMonitor.set_job_data(
-                self._dict(
-                    file=self._dict(
+                schema.JobData(
+                    file=schema.FileInfo(
                         name=name_in_storage,
                         path=path_in_storage,
                         display=display_name,
@@ -1354,14 +1316,8 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             ):
                 self._selectedFile["user"] = user
 
-                job_data = self.get_current_job()
-                self._stateMonitor.set_job_data(
-                    self._dict(
-                        file=job_data["file"],
-                        estimatedPrintTime=job_data["estimatedPrintTime"],
-                        averagePrintTime=job_data["averagePrintTime"],
-                        lastPrintTime=job_data["lastPrintTime"],
-                        filament=job_data["filament"],
+                self._stateMonitor.update_job_data(
+                    schema.JobData(
                         user=user,
                     )
                 )
@@ -1390,7 +1346,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
             )
 
     def _getStateFlags(self):
-        return self._dict(
+        return schema.StateFlags(
             operational=self.is_operational(),
             printing=self.is_printing(),
             cancelling=self.is_cancelling(),
@@ -1535,7 +1491,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
     def on_comm_sd_state_change(self, sdReady):
         self._stateMonitor.set_state(
-            self._dict(
+            schema.PrinterState(
                 text=self.get_state_string(),
                 flags=self._getStateFlags(),
                 error=self.get_error(),
@@ -1570,7 +1526,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
 
         self._setJobData(full_path, size, sd, user=user, data=data)
         self._stateMonitor.set_state(
-            self._dict(
+            schema.PrinterState(
                 text=self.get_state_string(),
                 flags=self._getStateFlags(),
                 error=self.get_error(),
@@ -1629,7 +1585,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
                 printTimeLeft=0,
             )
             self._stateMonitor.set_state(
-                self._dict(
+                schema.PrinterState(
                     text=self.get_state_string(),
                     flags=self._getStateFlags(),
                     error=self.get_error(),
@@ -1670,7 +1626,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
         else:
             self._updateProgressData()
             self._stateMonitor.set_state(
-                self._dict(
+                schema.PrinterState(
                     text=self.get_state_string(),
                     flags=self._getStateFlags(),
                     error=self.get_error(),
@@ -1814,7 +1770,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
         self._setJobData(remote_filename, filesize, True, user=user)
         self._updateProgressData(completion=0.0, filepos=0, printTime=0)
         self._stateMonitor.set_state(
-            self._dict(
+            schema.PrinterState(
                 text=self.get_state_string(),
                 flags=self._getStateFlags(),
                 error=self.get_error(),
@@ -1845,7 +1801,7 @@ class Printer(PrinterInterface, comm.MachineComPrintCallback):
         self._setJobData(None, None, None)
         self._updateProgressData()
         self._stateMonitor.set_state(
-            self._dict(
+            schema.PrinterState(
                 text=self.get_state_string(),
                 flags=self._getStateFlags(),
                 error=self.get_error(),
@@ -1956,12 +1912,7 @@ class StateMonitor:
         self._on_get_progress = on_get_progress
         self._on_get_resends = on_get_resends
 
-        self._state = None
-        self._job_data = None
-        self._current_z = None
-        self._offsets = {}
-        self._progress = None
-        self._resends = None
+        self._data = schema.CurrentData()
 
         self._progress_dirty = False
         self._resends_dirty = False
@@ -1976,83 +1927,79 @@ class StateMonitor:
         self._worker.daemon = True
         self._worker.start()
 
-    def _get_current_progress(self):
+    def _get_current_progress(self) -> schema.JobProgress:
         if callable(self._on_get_progress):
             return self._on_get_progress()
         return self._progress
 
-    def _get_current_resends(self):
+    def _get_current_resends(self) -> schema.ResendInfo:
         if callable(self._on_get_resends):
             return self._on_get_resends()
         return self._resends
 
-    def reset(
-        self,
-        state=None,
-        job_data=None,
-        progress=None,
-        current_z=None,
-        offsets=None,
-        resends=None,
-    ):
-        self.set_state(state)
-        self.set_job_data(job_data)
-        self.set_progress(progress)
-        self.set_current_z(current_z)
-        self.set_temp_offsets(offsets)
-        self.set_resends(resends)
+    def reset(self, state: schema.PrinterState) -> None:
+        self._data.reset(state=state)
 
-    def add_temperature(self, temperature):
+    def add_temperature(self, temperature: dict) -> None:
         self._on_add_temperature(temperature)
         self._change_event.set()
 
-    def add_log(self, log):
+    def add_log(self, log: str) -> None:
         self._on_add_log(log)
         with self._resends_lock:
             self._resends_dirty = True
         self._change_event.set()
 
-    def add_message(self, message):
+    def add_message(self, message: str) -> None:
         self._on_add_message(message)
         self._change_event.set()
 
-    def set_current_z(self, current_z):
-        self._current_z = current_z
+    def set_current_z(self, current_z: float) -> None:
+        self._data.currentZ = current_z
         self._change_event.set()
 
-    def set_state(self, state):
+    def set_state(self, state: schema.PrinterState) -> None:
         with self._state_lock:
-            self._state = state
+            self._data.state = state
             self._change_event.set()
 
-    def set_job_data(self, job_data):
-        self._job_data = job_data
+    def set_job_data(self, job_data: schema.JobData) -> None:
+        self._data.job = job_data
         self._change_event.set()
 
-    def trigger_progress_update(self):
+    def update_job_data(self, job_data: schema.JobData) -> None:
+        self._data.job.update(job_data)
+        self._change_event.set()
+
+    def trigger_progress_update(self) -> None:
         with self._progress_lock:
             self._progress_dirty = True
             self._change_event.set()
 
-    def set_progress(self, progress):
+    def set_progress(self, progress: schema.JobProgress) -> None:
         with self._progress_lock:
             self._progress_dirty = False
-            self._progress = progress
+            self._data.progress = progress
             self._change_event.set()
 
-    def set_resends(self, resend_ratio):
+    def trigger_resends_update(self) -> None:
+        with self._resends_lock:
+            self._resends_dirty = True
+            self._change_event.set()
+
+    def set_resends(self, resend_info: schema.ResendInfo) -> None:
         with self._resends_lock:
             self._resends_dirty = False
-            self._resends = resend_ratio
+            self._data.resends = resend_info
             self._change_event.set()
 
-    def set_temp_offsets(self, offsets):
+    def set_temp_offsets(self, offsets: dict) -> None:
         if offsets is None:
             offsets = {}
-        self._offsets = offsets
+        self._data.offsets = offsets
         self._change_event.set()
 
-    def _work(self):
+    def _work(self) -> None:
         try:
             while True:
                 self._change_event.wait()
@@ -2075,25 +2022,18 @@ class StateMonitor:
                 "to include logs!)"
             )
 
-    def get_current_data(self):
+    def get_current_data(self) -> dict:
         with self._progress_lock:
             if self._progress_dirty:
-                self._progress = self._get_current_progress()
+                self._data.progress = self._get_current_progress()
                 self._progress_dirty = False
 
         with self._resends_lock:
             if self._resends_dirty:
-                self._resends = self._get_current_resends()
+                self._data.resends = self._get_current_resends()
                 self._resends_dirty = False
 
-        return {
-            "state": self._state,
-            "job": self._job_data,
-            "currentZ": self._current_z,
-            "progress": self._progress,
-            "offsets": self._offsets,
-            "resends": self._resends,
-        }
+        return self._data.dict()
 
 
 class DataHistory(InvariantContainer):
